@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · semantic/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>semantic/ — 語意搜尋</h1>
+  <div class="subtitle">nomic-embed-code、11-signal 計分、MinHash/ROTSQ</div>
+  <div class="badge-line">目錄：<code>src/semantic/</code>（semantic.c + rotsq.c + ast_profile.c + minhash.c）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>semantic/</code> 讓 <code>semantic_query</code> 可以用自然語言找程式碼——不需要 API key、Ollama、Docker，因為向量模型（nomic-embed-code，768d int8）<strong>編譯進二進位</strong>。</p>
+
+<hr>
+
+<h2>1. 向量搜尋</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">semantic.c</span> <span class="fn-tag">semantic/</span><span class="fn-one-liner">semantic_query 的核心：embedding 比對 + 組合計分。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>查詢文字被轉成 embedding，與圖中節點比對。但它不是「單一向量距離」——而是 <strong>11-signal 組合計分</strong>：TF-IDF、RRI、API/Type/Decorator signatures、AST profiles、data flow、Halstead-lite、MinHash、module proximity、graph diffusion 等加權合成。</p>
+</div>
+</div>
+</details>
+
+<h2>2. ROTSQ 與 AST profile</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">rotsq.c · ast_profile.c</span> <span class="fn-tag">semantic/</span><span class="fn-one-liner">ROTSQ 與 AST 特徵輪廓。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>單靠 token 向量會漏掉「結構上像」的函式。<code>ast_profile</code> 把 AST 的形狀（巢狀、呼叫數量、參數模式）編成特徵，<code>rotsq</code> 提供另一種訊號——讓「詞彙完全不同但做的事一樣」的函式也能被找到。</p>
+</div>
+</div>
+</details>
+
+<h2>3. MinHash（近複製）</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">minhash.c</span> <span class="fn-tag">semantic/ + simhash/</span><span class="fn-one-liner">SIMILAR_TO 邊的底層：Jaccard 近複製偵測。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>MinHash + LSH 對大圖做近似重複偵測，產出 <code>SIMILAR_TO</code> 邊（Jaccard 計分）——找 copy-paste 程式碼。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：semantic 搜尋為何不需要 API key（模型編譯進二進位）、11-signal 計分比單一向量距離強在哪、AST profile/ROTSQ 怎麼補 token 向量的盲點、以及 MinHash 產出 SIMILAR_TO。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

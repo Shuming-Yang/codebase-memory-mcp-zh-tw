@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>15 個 MCP 工具 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>15 個 MCP 工具</h1>
+  <div class="subtitle">索引 / 查詢 / 讀取 / 維運 四類全解</div>
+</header>
+
+<div class="guide">
+
+<h2>總覽</h2>
+<table>
+<tr><th>類別</th><th>工具</th></tr>
+<tr><td>索引</td><td><code>index_repository</code> · <code>list_projects</code> · <code>delete_project</code> · <code>index_status</code></td></tr>
+<tr><td>查詢</td><td><code>search_graph</code> · <code>trace_path</code> · <code>detect_changes</code> · <code>query_graph</code> · <code>get_graph_schema</code></td></tr>
+<tr><td>讀取</td><td><code>get_code_snippet</code> · <code>get_architecture</code> · <code>search_code</code></td></tr>
+<tr><td>維運</td><td><code>manage_adr</code> · <code>check_index_coverage</code> · <code>ingest_traces</code></td></tr>
+</table>
+
+<h2>索引類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">index_repository</span><span class="fn-tag">索引</span><span class="fn-one-liner">把 repo 索引進圖；之後 auto-sync 保持新鮮。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>核心參數 <code>repo_path</code>（<strong>絕對路徑</strong>）。首次全索引，之後增量。auto_index 開啟時（<code>config set auto_index true</code>）會在新專案連線時自動執行。結束時可選擇寫出 team-shared graph artifact（見 <a href="graph-artifact.html">Graph Artifact</a>）。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">list_projects</span> · <span class="fn-name">delete_project</span> · <span class="fn-name">index_status</span><span class="fn-tag">索引</span><span class="fn-one-liner">列出 / 刪除 / 查狀態。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>list_projects</code> 回傳每個專案的 name（用於其他工具的 <code>project</code> 參數）、節點/邊數。 <code>delete_project</code> 移除專案與全部圖資料。<code>index_status</code> 查詢專案目前的索引狀態。</p>
+</div>
+</div>
+</details>
+
+<h2>查詢類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">search_graph</span><span class="fn-tag">查詢</span><span class="fn-one-liner">結構搜尋：name pattern、label、檔案過濾、degree 過濾、分頁。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>最常用的發現工具。正則 <code>name_pattern</code>（如 <code>.*Handler.*</code>）、<code>label</code>（如 Function）、<code>file_pattern</code>、<code>min_degree</code>/<code>max_degree</code>、<code>limit</code>/<code>offset</code> 分頁。這是「先發現確切名稱」的入口——<code>trace_path</code> 與 <code>get_code_snippet</code> 都靠它找目標。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">trace_path</span><span class="fn-tag">查詢</span><span class="fn-one-liner">BFS 遍歷——誰呼叫它、它呼叫誰。深度 1–5。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>別名 <code>trace_call_path</code>。<code>function_name</code> + <code>direction</code>（inbound / outbound / both）。這是取代「grep 誰呼叫 X」的殺手級工具——在型別解析的圖上 BFS，<code>&lt;10ms</code>。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">query_graph</span><span class="fn-tag">查詢</span><span class="fn-one-liner">執行 Cypher-like 圖查詢（唯讀）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>openCypher 唯讀子集（<a href="cypher.html">Cypher 全解</a>）。例如死碼偵測 <code>MATCH (f:Function) WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() } RETURN f.name</code>。子集之外的語法回傳明確的 <code>unsupported …</code> 錯誤，不會靜默回空。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">detect_changes</span><span class="fn-tag">查詢</span><span class="fn-one-liner">把 git diff 映射到受影響符號 + blast radius + 風險分類。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>讀取未 commit 的變更，映射到受影響的符號與風險等級。用於「改了這個會影響到誰」的影響分析。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">get_graph_schema</span><span class="fn-tag">查詢</span><span class="fn-one-liner">節點/邊計數、關係 pattern、每個 label 的屬性定義。先跑這個。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>探索圖結構的起點：看這個專案有哪些 label、邊型、屬性——決定接下來要問什麼。</p>
+</div>
+</div>
+</details>
+
+<h2>讀取類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">get_code_snippet</span><span class="fn-tag">讀取</span><span class="fn-one-liner">用 qualified name 讀函式原始碼。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>用 <code>&lt;project&gt;.&lt;path_parts&gt;.&lt;name&gt;</code> 直接讀函式原始碼——不用先知道檔案路徑。qualified name 可用 <code>search_graph</code> 發現。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">get_architecture</span><span class="fn-tag">讀取</span><span class="fn-one-liner">codebase 總覽：語言、套件、入口點、路由、熱點、邊界、分層、cluster。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>一次呼叫拿整個專案的架構摘要。含社群 cluster（Louvain 偵測的功能模組）與 ADR 摘要。跨 repo 時也能給 cross-repo architecture summary。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">search_code</span><span class="fn-tag">讀取</span><span class="fn-one-liner">grep-like 文字搜尋，只在已索引的檔案。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>跟 grep 類似，但範圍限於圖索引的檔案——語意上有圖的加持（可顯示該 hit 對應到哪個符號）。</p>
+</div>
+</div>
+</details>
+
+<h2>維運類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">manage_adr</span><span class="fn-tag">維運</span><span class="fn-one-liner">Architecture Decision Record 的 CRUD。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>把架構決策（ADR）持久化，跨 session 保留下來。query 模式（get/sections）用 server 的快取 query store，可以在同專案重索引進行中繼續服務；寫入仍序列化。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">check_index_coverage</span><span class="fn-tag">維運</span><span class="fn-one-liner">針對一組路徑檢查索引涵蓋率。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>檢查給定檔案路徑是否被索引、有無 flagged / skipped / excluded 範圍。agent 的 Verify / Auditor tier 用它做「證據路徑的涵蓋檢查」——clean 結果只代表「沒有記錄缺口」，不是完整證明。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">ingest_traces</span><span class="fn-tag">維運</span><span class="fn-one-liner">收納 runtime traces 來驗證 HTTP_CALLS 邊。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>把 runtime trace 資料收進圖，用真實執行資料驗證/補強 HTTP_CALLS 跨服務邊。</p>
+</div>
+</div>
+</details>
+
+<h2>CLI 模式</h2>
+<p>每個 MCP 工具都能當單次本機指令跑（<code>cli</code> 子指令），不會啟動 daemon、不留常駐 process：</p>
+<pre><code>codebase-memory-mcp cli index_repository --repo-path /path/to/repo
+codebase-memory-mcp cli list_projects
+codebase-memory-mcp cli search_graph --project my-project --name-pattern '.*Handler.*' --label Function
+codebase-memory-mcp cli trace_path --project my-project --function-name Search --direction both
+codebase-memory-mcp cli query_graph --project my-project --query 'MATCH (f:Function) RETURN f.name LIMIT 5'</code></pre>
+<p>加 <code>--json</code> 拿完整 MCP result envelope；<code>--progress</code> 在非互動環境強制顯示進度（只寫 stderr，stdout 保持機器可讀）。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：15 個工具的四類分法、<code>search_graph</code> 為何是發現入口、<code>trace_path</code> 如何取代 grep「誰呼叫誰」、以及每個工具都能用 <code>cli</code> 子指令在本機跑。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

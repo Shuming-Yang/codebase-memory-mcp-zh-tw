@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>Session Coordination Daemon · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>Session Coordination Daemon</h1>
+  <div class="subtitle">一帳號一 daemon、共享 watcher/索引/UI、admission barrier、CLI 分離</div>
+</header>
+
+<div class="guide">
+
+<h2>為什麼要 daemon</h2>
+<p>你在 Claude Code、Codex、OpenCode 各開一個 session 都用 CBM——如果每個 session 各跑各的 watcher、各自索引、各自開 UI，就是浪費。CBM 用<strong>每帳號一個協調 daemon</strong>解決：</p>
+<ul>
+<li>第一個 daemon-backed session 啟動它，每個 session 註冊自己的 work，最後一個 session 關閉它。</li>
+<li>daemon 擁有長駐背景服務：watchers、共享索引 jobs、可選的 UI。</li>
+<li>關掉一個 session 只取消「它擁有的 work」；其他 session 還需要的 work 繼續。</li>
+</ul>
+
+<h2>daemon 不依賴 MCP frontend 的 stderr</h2>
+<p>daemon 是 detached 的，它把事件寫到 owner-only 的 durable records（<code>${CBM_CACHE_DIR}/logs</code>）：</p>
+<table>
+<tr><th>檔案</th><th>內容</th></tr>
+<tr><td><code>cbm-daemon.log</code></td><td>daemon lifecycle、watcher/indexing、UI、resource、error 事件</td></tr>
+<tr><td><code>daemon-conflicts.ndjson</code></td><td>exact-build、coordination-ABI、cache-root admission 衝突</td></tr>
+<tr><td><code>activation-events.ndjson</code></td><td>install/update/uninstall 的 activation 進度與結果</td></tr>
+</table>
+
+<h2>exact-build admission barrier</h2>
+<p>所有 active 的 CBM process 必須：<strong>完全相同版本 + 相同 executable build + 相同 coordination ABI + 相同 canonical cache root</strong>。等效的 <code>CBM_CACHE_DIR</code> alias 解析到同一個 root；真正不同的 root 在還有 CBM process active 時被拒絕。衝突會被記錄到 <code>daemon-conflicts.ndjson</code>。</p>
+<div class="callout"><strong>為什麼</strong>：不同版本的二進位對同一份 SQLite 圖做讀寫，會產生 ABI/格式衝突——admission barrier 讓「混版狀態」在做事之前就失敗，而不是讓資料壞掉。</div>
+
+<h2>CLI 模式刻意分離</h2>
+<p><code>codebase-memory-mcp cli &lt;tool&gt;</code> 是單次指令：<strong>不啟動也不連 daemon、不註冊 session、不啟動 watcher/UI</strong>。唯一的共享狀態是 OS admission barrier 與 per-project locks（防止同專案並行寫入衝突）。指令跑完就結束，不留常駐 process。</p>
+
+<h2>更新與 daemon</h2>
+<p>native <code>install/update/uninstall</code> 是衝突規則的刻意例外：先下載/驗證/暫存好，<strong>然後</strong>才發布維護意圖、要求 daemon 與所有暫時性操作取消、等所有 process 退出、獨佔 admission/lifetime barriers 更換二進位。成功後會提示你重啟 agent session 以載入新 build。</p>
+<p>套件管理器（npm/PyPI/Go）只發布該套件的私有快取二進位，不會停止執行中的 session——該二進位執行時仍進同一個 admission barrier。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：daemon 解決了什麼共享問題、admission barrier 為何要求 exact-build、CLI 為何刻意不連 daemon、以及更新流程「先備好再換」的安全順序。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

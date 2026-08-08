@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>版本演進 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>版本演進摘要</h1>
+  <div class="subtitle">0.7 → 0.8 → 0.9：Hybrid LSP 擴張與工程強化</div>
+</header>
+
+<div class="guide">
+
+<h2>Hybrid LSP 的擴張主線</h2>
+<p>CBM 最有價值的演進是 Hybrid LSP 型別解析的語言覆蓋擴張：</p>
+<table>
+<tr><th>版本</th><th>新增/強化</th></tr>
+<tr><td><strong>v0.7.0</strong></td><td>新增 <strong>Python / PHP / C#</strong> Hybrid LSP；Go 與 C/C++ 強化（pre-built 跨檔 registry、generics）</td></tr>
+<tr><td><strong>v0.8.0</strong></td><td>新增 <strong>Java / Kotlin / Rust</strong> Hybrid LSP</td></tr>
+<tr><td><strong>v0.9.0</strong></td><td>語意邊（SEMANTICALLY_RELATED / SIMILAR_TO）、cross-repo 強化、semantic search 11-signal scoring</td></tr>
+</table>
+
+<h2>各版新增能力（摘要）</h2>
+<ul>
+<li><strong>語意搜尋</strong>：nomic-embed-code embeddings（768d int8）編譯進二進位——零 API key、本機向量搜尋，11-signal 組合計分（TF-IDF、RRI、API/Type/Decorator signatures、AST profiles、data flow、Halstead-lite、MinHash、module proximity、graph diffusion）。</li>
+<li><strong>Cross-repo</strong>：<code>CROSS_*</code> 邊、multi-galaxy 3D UI 佈局、cross-repo architecture summary。</li>
+<li><strong>Cross-service linking</strong>：HTTP route ↔ call-site 匹配 + confidence、gRPC/GraphQL/tRPC 偵測、channel（EMITS/LISTENS_ON）。</li>
+<li><strong>Team-Shared Graph Artifact</strong>：<code>graph.db.zst</code>（two-tier export、bootstrap 匯入、merge=ours）。</li>
+<li><strong>Session Coordination Daemon</strong>：exact-build admission barrier、activation transaction、owner-only logs。</li>
+</ul>
+
+<h2>為何這是「值得教學」的演進</h2>
+<p>看版本線可以學到：CBM 不是「從 0 突然 158 語系」——它是先有 tree-sitter 語法層，再一版一版把<strong>型別解析</strong>的語言覆蓋撐起來。v0.7（Python/PHP/C#）→ v0.8（Java/Kotlin/Rust）→ v0.9（語意邊 + 搜尋）是一條清楚的路線：<strong>語法 → 型別 → 語意</strong>。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 的「語法 → 型別 → 語意」三階段演進、v0.7/v0.8 各新增哪些 Hybrid LSP 語言、v0.9 的語意搜尋與語意邊在哪。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

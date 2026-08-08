@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>運作原理 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>運作原理</h1>
+  <div class="subtitle">無內建 LLM 的設計哲學、兩層解析、RAM-first 管線</div>
+</header>
+
+<div class="guide">
+
+<h2>一句話</h2>
+<p>codebase-memory-mcp 是<strong>結構分析後端</strong>——它建圖、存圖、查圖，但<strong>不內建 LLM</strong>。你的 MCP client（Claude Code、OpenCode…）才是翻譯官：它把你的自然語言問題轉成對圖的結構查詢。</p>
+<pre><code>你：什麼呼叫了 ProcessOrder？
+
+agent 呼叫: trace_path(function_name="ProcessOrder", direction="inbound")
+
+CBM: 執行圖查詢，回傳結構化結果
+
+agent: 用白話英文呈現呼叫鏈</code></pre>
+
+<h2>為什麼不內建 LLM</h2>
+<p>其他 code graph 工具會內嵌 LLM 做「自然語言 → 圖查詢」翻譯，代價是多一組 API key、多一筆成本、多一個要設定的模型。CBM 的答案：<strong>你正在對話的那個 agent 本身就是查詢翻譯官</strong>。MCP 讓 agent 直接呼叫結構化工具，不需要在工具裡再塞一個模型。</p>
+
+<h2>兩層解析架構</h2>
+<p>單靠 tree-sitter 只能給語法 AST——它看得出命名、結構、呼叫點，但看不出 <code>user.profile.display_name()</code> 其實解析到三個 module 外的 <code>Profile.display_name</code>（tree-sitter 不追蹤 imports、generics、inheritance、stdlib 型別）。所以 CBM 疊上第二層：</p>
+<table>
+<tr><th>層</th><th>做什麼</th><th>適用</th></tr>
+<tr><td><strong>1. Tree-sitter pass</strong></td><td>快速、語法層：抽取定義、呼叫、import</td><td>全部 158 語言</td></tr>
+<tr><td><strong>2. Hybrid LSP pass</strong></td><td>型別感知：用 import graph + 跨檔定義 registry 精煉呼叫邊</td><td>Python/TS/PHP/C#/Go/C/C++/Java/Kotlin/Rust/Perl</td></tr>
+</table>
+<p><strong>Hybrid LSP</strong> 是一套<strong>用 C 實作的語言型別解析演算法</strong>，結構上受 tsserver / pyright / gopls / Roslyn / Eclipse JDT / rust-analyzer 啟發且相容——但<strong>不是真的語言 server</strong>（沒有獨立 process、沒有每專案設定、沒有 API key），直接編進靜態二進位，跑在每一次 parse 上。</p>
+<div class="callout"><strong>結果</strong>：呼叫解析（<code>CALLS</code> / <code>RESOLVED_CALLS</code>）與可呼叫值解析（<code>CALL_REFERENCE</code>）用型別資訊精煉——產出的圖接近 IDE「Go to Definition」會解析出的樣子。沒有 Hybrid LSP 的語言則退回文字解析，總是有某種答案。</div>
+
+<h2>Hybrid LSP 各語言處理重點</h2>
+<table>
+<tr><th>語言</th><th>處理重點</th></tr>
+<tr><td>Python</td><td>imports + dotted submodule、dataclasses、generics、SQLAlchemy 2.0 <code>Mapped[T]</code>、Pydantic、型別縮窄（isinstance / walrus）、常見 stdlib</td></tr>
+<tr><td>TypeScript/JS/JSX/TSX</td><td>generics、JSX 元件分派、JSDoc 推斷、<code>.d.ts</code>、module re-exports、method chaining 回傳型別傳播</td></tr>
+<tr><td>PHP</td><td>namespaces、traits、late-static-binding、PHPDoc 推斷</td></tr>
+<tr><td>C#</td><td>global usings、file-scoped namespaces、records、LINQ、<code>async Task&lt;T&gt;</code> unwrap、<code>var</code> 推斷</td></tr>
+<tr><td>Go</td><td>pre-built 跨檔 registry、generics、embedded structs、interface satisfaction</td></tr>
+<tr><td>C/C++</td><td>macros + typedef chains + header-vs-source 連結；C++ templates、namespaces、auto、class hierarchy</td></tr>
+<tr><td>Java</td><td>imports、class hierarchy、generics、annotations、overload 匹配、lambdas、常見 JDK stdlib</td></tr>
+<tr><td>Kotlin</td><td>extension functions、data classes、nullable unwrap、scope functions（let/apply/run）</td></tr>
+<tr><td>Rust</td><td><code>use</code> + module paths、impl/trait methods、generics、UFCS、operator-trait desugaring</td></tr>
+<tr><td>Perl</td><td><code>@ISA</code> / <code>use parent</code> 繼承、Exporter import maps、<code>bless</code> 自型別推斷</td></tr>
+</table>
+
+<h2>RAM-first 索引管線</h2>
+<p>索引全程在記憶體跑，結束才落盤一次：</p>
+<ol>
+<li><strong>LZ4 HC 壓縮讀入</strong>原始檔。</li>
+<li><strong>in-memory SQLite</strong>：節點/邊先放記憶體。</li>
+<li>多 pass 管線：structure → definitions → calls → HTTP links → config → tests…</li>
+<li><strong>單次 dump</strong> 到磁碟，之後記憶體釋放回 OS。</li>
+</ol>
+<p>這解釋了為什麼 Linux kernel（28M LOC、75K 檔）能 3 分鐘全索引完——RAM-first + 平行 worker（<code>pass_parallel.c</code>，可用 <code>CBM_WORKERS</code> 調整）＋ 記憶體用完即釋放。</p>
+
+<h2>索引完之後</h2>
+<p>圖存在 SQLite（<code>~/.cache/codebase-memory-mcp/</code>），WAL 模式、ACID-safe。查詢走 15 個 MCP 工具（見 <a href="mcp-tools.html">MCP 工具全解</a>）。之後 watcher 會偵測檔案變更做<strong>增量重索引</strong>，不用每次全跑。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：為什麼 CBM 不需要內建 LLM、tree-sitter 與 Hybrid LSP 各負責什麼、RAM-first 如何支撐 3 分鐘索引 kernel、以及「Go to Definition 等級」的解析是什麼意思。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

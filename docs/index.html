@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>文件教學 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="../index.html">← 回首頁</a></div>
+<header>
+  <h1>文件教學</h1>
+  <div class="subtitle">把官方文件翻譯成中文口語解說（英文原文可展開）</div>
+</header>
+
+<div class="guide">
+<p>這裡把上游 README 與 <code>docs/</code> 的官方文件，依「值得教學」原則做中文解說。每個主題一頁，中文為主文，英文原文用可展開的 <code>&lt;details&gt;</code> 保留。</p>
+
+<div class="card-grid">
+  <a class="card" href="how-it-works.html"><span class="c-name">運作原理</span><span class="c-zh">無內建 LLM 的設計哲學、兩層解析（tree-sitter + Hybrid LSP）、RAM-first pipeline、記憶體釋放。</span></a>
+  <a class="card" href="architecture.html"><span class="c-name">架構總覽</span><span class="c-zh">15 個 src/ 模組職責表、索引 pass 順序、internal/cbm vendored grammars。</span></a>
+  <a class="card" href="data-model.html"><span class="c-name">圖資料模型</span><span class="c-zh">13 種節點 label、23 種邊型、qualified name、查詢範例。</span></a>
+  <a class="card" href="mcp-tools.html"><span class="c-name">15 個 MCP 工具</span><span class="c-zh">索引/查詢/讀取/維運四類全解：用途、參數、範例輸出。</span></a>
+  <a class="card" href="cypher.html"><span class="c-name">Cypher 查詢</span><span class="c-zh">openCypher 唯讀子集：clauses / patterns / WHERE / aggregates / 死碼查詢。</span></a>
+  <a class="card" href="performance.html"><span class="c-name">效能基準</span><span class="c-zh">Linux kernel 3min、Cypher &lt;1ms、token 省 99.2%。</span></a>
+  <a class="card" href="security.html"><span class="c-name">安全模型</span><span class="c-zh">SLSA3/cosign/VirusTotal/CodeQL、零依賴、無 telemetry、診斷 log。</span></a>
+  <a class="card" href="daemon.html"><span class="c-name">Session Coordination Daemon</span><span class="c-zh">一帳號一 daemon、watcher/UI/索引共享、admission barrier、CLI 分離。</span></a>
+  <a class="card" href="config.html"><span class="c-name">設定</span><span class="c-zh">config 指令、CBM_* 環境變數、.cbmignore、extra_extensions。</span></a>
+  <a class="card" href="graph-artifact.html"><span class="c-name">Graph Artifact</span><span class="c-zh">.codebase-memory/graph.db.zst 團隊共享圖快照、two-tier、merge=ours。</span></a>
+  <a class="card" href="multi-agent.html"><span class="c-name">Multi-Agent</span><span class="c-zh">43 個 agent 平台整合、Scout/Verify/Auditor 三層、conditional/explicit。</span></a>
+  <a class="card" href="changelog-summary.html"><span class="c-name">版本演進</span><span class="c-zh">0.7→0.8 Hybrid LSP 擴張、semantic edges、cross-repo。</span></a>
+  <a class="card" href="worked.html"><span class="c-name">實作案例入口</span><span class="c-zh">真實 graphify 產出的互動知識圖譜與查詢示範。</span></a>
+</div>
+
+<p class="hint">想看原始碼本身？前往 <a href="code/index.html">程式碼對照</a>（逐函數講解）。</p>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

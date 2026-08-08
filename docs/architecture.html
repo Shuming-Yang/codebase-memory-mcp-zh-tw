@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>架構總覽 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>架構總覽</h1>
+  <div class="subtitle">15 個 src/ 模組的職責，一張表看懂</div>
+</header>
+
+<div class="guide">
+
+<h2>源碼佈局</h2>
+<pre class="file-tree">src/
+  main.c              Entry point（MCP stdio server + CLI + install/update/config）
+  daemon/             每帳號的 session 協調：IPC、lifecycle、共享 jobs/watchers
+  mcp/                MCP server（15 tools、JSON-RPC 2.0、session detection、auto-index）
+  cli/                install/uninstall/update/config（43 client surfaces、hooks）
+  store/              SQLite 圖儲存（nodes、edges、traversal、search、Louvain）
+  pipeline/           多 pass 索引（structure → definitions → calls → HTTP → config → tests）
+  cypher/             Cypher query lexer、parser、planner、executor
+  discover/           檔案發現（.gitignore、.cbmignore、symlink 處理）
+  watcher/            背景 auto-sync（git polling、adaptive intervals）
+  traces/             Runtime trace ingestion
+  ui/                 Embedded HTTP server + 3D graph visualization
+  foundation/         平台抽象（threads、filesystem、logging、memory）
+internal/cbm/         Vendored tree-sitter grammars（158 語言）+ AST extraction engine</pre>
+
+<h2>模組職責表</h2>
+<table>
+<tr><th>模組</th><th>職責</th><th>程式碼對照</th></tr>
+<tr><td><code>main.c</code></td><td>單一二進位入口，分派到 MCP server / CLI / install / update / config</td><td><a href="code/main.html">main.c →</a></td></tr>
+<tr><td><code>daemon/</code></td><td>一帳號一協調 daemon：跨 session 共享 watcher/索引/UI；admission barrier</td><td><a href="code/daemon.html">daemon/ →</a></td></tr>
+<tr><td><code>mcp/</code></td><td>15 個 MCP 工具的註冊與執行、JSON-RPC 2.0、session detection、auto-index</td><td><a href="code/mcp.html">mcp/mcp.c →</a></td></tr>
+<tr><td><code>cli/</code></td><td>install/uninstall/update/config；43 個 client surface；hooks/instructions 安裝</td><td><a href="code/cli.html">cli/cli.c →</a></td></tr>
+<tr><td><code>store/</code></td><td>SQLite 圖儲存：節點/邊、BFS 遍歷、BM25 搜尋、Louvain 社群</td><td><a href="code/store.html">store/store.c →</a></td></tr>
+<tr><td><code>pipeline/</code></td><td>多 pass 索引調度（<code>pipeline.c</code>）+ pass 註冊（<code>registry.c</code>）</td><td><a href="code/pipeline.html">pipeline/ →</a></td></tr>
+<tr><td><code>cypher/</code></td><td>openCypher 唯讀子集的編譯與執行</td><td><a href="code/cypher.html">cypher/cypher.c →</a></td></tr>
+<tr><td><code>discover/</code></td><td>收集要索引的檔案：硬編碼模式 → .gitignore → .cbmignore；symlink 永遠跳過</td><td><a href="code/discover.html">discover/ →</a></td></tr>
+<tr><td><code>watcher/</code></td><td>背景檔案監看，偵測變更後自動增量重索引</td><td><a href="code/discover.html">watcher →</a></td></tr>
+<tr><td><code>traces/</code></td><td>runtime trace 收納（<code>ingest_traces</code> 工具）</td><td>—</td></tr>
+<tr><td><code>ui/</code></td><td>嵌入式 HTTP server + 3D 圖形界面（<code>--ui</code> 變體，localhost:9749）</td><td><a href="code/ui.html">ui/ →</a></td></tr>
+<tr><td><code>foundation/</code></td><td>平台抽象：arena 記憶體、執行緒、檔案系統、regex、診斷</td><td>—</td></tr>
+</table>
+
+<h2>索引 pass 順序</h2>
+<p>索引不是一個大函式，而是一串 pass，各自職責單一：</p>
+<table>
+<tr><th>Pass</th><th>做什麼</th></tr>
+<tr><td><code>pass_definitions</code></td><td>抽取函式/類別/方法等定義節點</td></tr>
+<tr><td><code>pass_calls</code></td><td>建 <code>CALLS</code> 邊（import-aware、型別推斷）</td></tr>
+<tr><td><code>pass_lsp_cross</code> / <code>lsp_surface</code></td><td>Hybrid LSP 跨檔型別解析</td></tr>
+<tr><td><code>pass_route_nodes</code></td><td>REST 端點變一級圖實體（<code>Route</code> 節點）</td></tr>
+<tr><td><code>pass_cross_repo</code></td><td>跨 repo 的 <code>CROSS_*</code> 邊</td></tr>
+<tr><td><code>pass_infrascan</code> / <code>pass_k8s</code></td><td>IaC：Dockerfile、K8s manifests、Kustomize overlays</td></tr>
+<tr><td><code>pass_pkgmap</code></td><td>套件解析（package.json / go.mod / Cargo.toml / pyproject.toml…）</td></tr>
+<tr><td><code>pass_similarity</code></td><td>MinHash + LSH 近複製偵測（<code>SIMILAR_TO</code>）</td></tr>
+<tr><td><code>pass_semantic*</code></td><td>語意邊（<code>SEMANTICALLY_RELATED</code>）</td></tr>
+<tr><td><code>pass_gitdiff</code> / <code>pass_githistory</code></td><td>變更耦合（<code>detect_changes</code> 用）</td></tr>
+<tr><td><code>pass_parallel</code></td><td>平行 worker 調度（worker pool）</td></tr>
+</table>
+
+<h2>資料流</h2>
+<pre><code>repo ──discover──▶ 檔案清單 ──tree-sitter AST──▶ 結構節點/邊
+                                        │
+                                        ▼ Hybrid LSP（型別解析）
+                                精煉 CALLS / CALL_REFERENCE
+                                        │
+                 store/（SQLite）◀──多 pass 管線──（HTTP routes、IaC、相似度…）
+                                        │
+                ┌───────────────────────┼───────────────────────┐
+                ▼                       ▼                       ▼
+           15 MCP tools            Cypher engine            3D UI (--ui)</code></pre>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：CBM 由哪幾個模組組成、索引是「多 pass」而非單一函式、Hybrid LSP 夾在 tree-sitter 與 store 之間做型別精煉、以及哪些 pass 產出 Route / CROSS_* / SIMILAR_TO 邊。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

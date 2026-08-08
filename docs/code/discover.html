@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · discover/ + watcher/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>discover/ + watcher/ — 檔案發現與自動同步</h1>
+  <div class="subtitle">哪些檔案進圖、變更了怎麼重索引</div>
+  <div class="badge-line">目錄：<code>src/discover/</code> · <code>src/watcher/</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>discover/</code> 決定「哪些檔案進圖」，<code>watcher/</code> 決定「檔案變了之後怎麼保持圖新鮮」。兩者都跟 <a href="../../docs/config.html">忽略規則</a> 密切相關。</p>
+
+<hr>
+
+<h2>1. discover/ — 檔案發現</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_discover()</span> <span class="fn-tag">discover/discover.c</span><span class="fn-one-liner">走訪目錄，回傳要索引的檔案清單。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>走訪 repo，套用忽略規則：</p>
+<ol>
+<li>硬編碼模式（<code>.git</code>、<code>node_modules</code>…）</li>
+<li><code>.gitignore</code> 階層</li>
+<li><code>.cbmignore</code>（專案專用，gitignore 語法）</li>
+<li>symlink 永遠跳過</li>
+</ol>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">cbm_matches_fast_pattern() · cbm_should_skip_dir() · cbm_should_skip_filename()</span> <span class="fn-tag">discover/discover.c</span><span class="fn-one-liner">快速過濾：路徑/目錄/檔名的跳過判斷。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>為了在 75K 檔的 repo 上也能快速走完，discover 用 fast pattern 匹配（非逐檔 regex）過濾，並對目錄層級提前剪枝。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">language.c · gitignore.c</span> <span class="fn-tag">discover/</span><span class="fn-one-liner">語言偵測與 gitignore 解析。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>language.c</code> 依副檔名判斷語言（配合 <code>extra_extensions</code> 的映射）；<code>gitignore.c</code> 解析 <code>.gitignore</code> 語法（含 <code>!</code> 反轉）。</p>
+</div>
+</div>
+</details>
+
+<h2>2. watcher/ — 自動同步</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_watcher_new() · cbm_watcher_poll_once() · cbm_watcher_run()</span> <span class="fn-tag">watcher/watcher.c</span><span class="fn-one-liner">背景監看、git polling、adaptive intervals。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>watcher 由 daemon 擁有（跨 session 共享）。它輪詢 git 狀態偵測變更，用 adaptive interval 平衡「即時」與「省資源」。偵測到變更就觸發增量重索引（寫 Fast tier 的 <code>graph.db.zst</code>）。<code>auto_watch false</code> 可關掉。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：檔案進圖的三層忽略 + symlink 規則、fast pattern 如何支撐 75K 檔走訪、watcher 由 daemon 共享且用 adaptive interval、以及 auto_watch 的開關。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · pipeline/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>pipeline/ — 多 pass 索引</h1>
+  <div class="subtitle">索引管線的調度與 pass 註冊</div>
+  <div class="badge-line">檔案：<code>src/pipeline/pipeline.c</code>（2,524 行）· <code>registry.c</code>（1,031 行）· <code>pipeline.h</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>pipeline.c</code> 是把「一堆 source 檔」變成「一堆節點/邊」的總指揮。它管：pass 的註冊與執行順序、平行調度（<code>pass_parallel.c</code> 的 worker pool）、專案識別、以及最後把結果 publish 給 store。</p>
+
+<hr>
+
+<h2>1. Pipeline 生命週期</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_pipeline_new() · cbm_pipeline_run() · cbm_pipeline_free()</span> <span class="fn-tag">pipeline.c</span><span class="fn-one-liner">pipeline 的建立、執行、釋放。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>new</code> 初始化專案狀態（project name、cache、store 關聯）；<code>run</code> 依序跑所有註冊的 pass；<code>free</code> 清理。<code>set_before_publish_hook_for_tests</code> 這類 <code>for_test</code> hook 是 CBM 的可測試性設計——很多函式有測試鉤子。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">cbm_pipeline_cancel()</span> <span class="fn-tag">pipeline.c</span><span class="fn-one-liner">讓執行中的索引可被取消（daemon activation 時用）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>更新流程要求所有 process 取消時，執行中的索引透過此函式安全停止——不會留下半寫的圖。</p>
+</div>
+</div>
+</details>
+
+<h2>2. Pass 註冊（registry.c）</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">pass 註冊表</span> <span class="fn-tag">registry.c</span><span class="fn-one-liner">每個 pass 一個登錄項：名稱、前置條件、執行函式。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>registry.c</code> 是 pass 的清單。pipeline 依 registry 的順序執行每個 pass，每個 pass 把節點/邊 publish 到 store。想看各 pass 細節見 <a href="passes.html">passes.html</a>。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 平行化</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_parallel / worker_pool</span> <span class="fn-tag">pipeline/</span><span class="fn-one-liner">把可並行的抽取分散到多個 worker。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>大 repo 的索引速度靠平行 worker 撐起來（Linux kernel 3 分鐘的秘密之一）。<code>CBM_WORKERS</code> 可覆寫偵測到的 worker 數。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：pipeline 的 new/run/free 生命週期、pass 靠 registry 註冊與依序執行、可取消性如何支援更新流程、以及平行化如何貢獻索引速度。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

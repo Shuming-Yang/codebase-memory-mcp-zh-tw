@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · tests/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>tests/ — 測試策略</h1>
+  <div class="subtitle">6,768 tests / 120 suites：Hybrid LSP 覆蓋是重頭戲</div>
+  <div class="badge-line">目錄：<code>tests/</code>（6,768 tests / 120 suites）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p>CBM 的測試量非常大（6,768 tests / 120 suites）。特別值得注意的是 <strong>Hybrid LSP 各語系的覆蓋測試</strong>——每個支援的語言都有一大堆「這個模式要解析到那個目標」的斷言測試。</p>
+
+<hr>
+
+<h2>1. 測試分類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">test_&lt;lang&gt;_lsp.c</span> <span class="fn-tag">tests/</span><span class="fn-one-liner">Hybrid LSP 各語系解析測試（最大的測試群）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>graphify 案例中最大的社群就是這些：<code>test_c_lsp.c</code>（602 節點社群）、<code>test_rust_lsp.c</code>、<code>test_php_lsp.c</code>、<code>test_java_lsp.c</code>、<code>test_ts_lsp.c</code>、<code>test_kotlin_lsp.c</code>、<code>test_py_lsp.c</code>。每個都斷言「某段程式碼的某個呼叫解析到正確目標」。這是「Go to Definition 等級解析」品質的來源。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">test_cypher.c · test_store.c · test_cli.c · test_daemon*.c</span> <span class="fn-tag">tests/</span><span class="fn-one-liner">核心模組的單元測試。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>Cypher 引擎、store、CLI、daemon 各有專屬測試檔。多數函式有 <code>_for_test()</code> 鉤子讓測試注入失敗/延遲（可測試性設計）。</p>
+</div>
+</div>
+</details>
+
+<h2>2. 特殊測試</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">test-infrastructure/ · repro/ · scale_contract.sh</span> <span class="fn-tag">tests/</span><span class="fn-one-liner">回歸、重現、規模契約。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>repro/</code> 放 issue 重現（<code>repro_issue408…</code>）；<code>scale_contract.sh</code> 驗證規模行為（大 repo 不退化）；<code>smoke_guard.sh</code> 做煙霧守衛。還有 <code>grammar_cases.h</code> 涵蓋各文法邊界案例。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 如何跑</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">scripts/test.sh</span> <span class="fn-tag">scripts/</span><span class="fn-one-liner">測試入口（與 CI gate 相同）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<pre><code>scripts/test.sh                     # full: clean sanitizer build + all suites + guards
+scripts/test.sh --suites &lt;name&gt;     # 單一 suite，增量，幾秒
+build/c/test-runner --list-suites   # 看有哪些 suite</code></pre>
+<p>CI gate 也跑 <code>scripts/test.sh</code>——本機過 = CI 過。另有 <code>test_build_dir_safety.sh</code>、<code>test_cpp_index_hang.sh</code> 這類 shell 守衛。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：CBM 的測試主力是 Hybrid LSP 各語系的解析斷言、<code>_for_test()</code> 鉤子讓核心可測、repro/ 放 issue 重現、以及 test.sh 與 CI gate 相同。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

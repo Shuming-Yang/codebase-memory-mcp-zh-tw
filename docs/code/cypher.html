@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · cypher/cypher.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>cypher/cypher.c — 查詢引擎</h1>
+  <div class="subtitle">openCypher 唯讀子集的 lexer → parser → planner → executor</div>
+  <div class="badge-line">檔案：<code>src/cypher/cypher.c</code>（4,972 行）· <code>cypher.h</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>cypher.c</code> 是一個迷你的資料庫查詢引擎：它把 <code>query_graph</code> 收到的 Cypher 字串編譯成可執行的計畫，再對 store 執行。雖然只支援 openCypher 的<strong>唯讀子集</strong>，但完整的四階段（lexer → parser → planner → executor）都有——讀這個檔案等於讀「怎麼在 C 裡寫一個小型圖查詢引擎」。</p>
+
+<hr>
+
+<h2>1. 前端：lexer + parser</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">lexer（tokenize）</span> <span class="fn-tag">cypher.c</span><span class="fn-one-liner">把查詢字串切成 token：識別字、label、邊方向、數字、字串。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>把 <code>MATCH (f:Function)-[:CALLS]-&gt;(g) RETURN g.name</code> 切成 token 序列。處理 <code>:</code> label、<code>[*1..3]</code> 可變長度、引號字串、<code>=~</code> regex 等。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">parser（AST 建立）</span> <span class="fn-tag">cypher.c</span><span class="fn-one-liner">把 token 組合成語法樹：MATCH/WHERE/RETURN 子句。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>遞迴下降解析：pattern（節點、邊、方向）、WHERE 條件樹、aggregates、UNION。遇到不支援的子集語法（<code>MERGE</code>、<code>CALL</code>、comprehensions）在此回報 <code>unsupported …</code> 錯誤。</p>
+</div>
+</div>
+</details>
+
+<h2>2. Planner + Executor</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">planner</span> <span class="fn-tag">cypher.c</span><span class="fn-one-liner">把 AST 轉成執行計畫（哪些邊先走、filter 順序）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>決定查詢順序：先抓 label 少的候選，再做 join/filter。EXISTS 子查詢（死碼偵測）被編譯成「檢查單跳存在性」的特別步驟。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">executor（cbm_cypher_execute）</span> <span class="fn-tag">cypher.c</span><span class="fn-one-liner">執行計畫，回傳 cbm_cypher_result_t。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>對 store 的 SQL 下查詢、組列、套 aggregates（count/sum/avg/min/max/collect）、處理 ORDER BY / SKIP / LIMIT、UNION 合併。<code>&lt;1ms</code> 的 Cypher 查詢就在這裡達成。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：Cypher 子集是「四階段編譯」的小型查詢引擎、lexer/parser/planner/executor 各做什麼、<code>unsupported …</code> 在哪一層被拒絕、以及 EXISTS 子查詢如何編譯成單跳存在性檢查。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

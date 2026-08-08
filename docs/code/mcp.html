@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · mcp/mcp.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>mcp/mcp.c — MCP 工具層</h1>
+  <div class="subtitle">15 個工具的註冊與執行、JSON-RPC 2.0、session detection</div>
+  <div class="badge-line">檔案：<code>src/mcp/mcp.c</code>（11,797 行）· <code>mcp.h</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>mcp.c</code> 是 CBM 對 MCP client 的門面。它負責：JSON-RPC 2.0 的解析與回覆、15 個工具的 schema 註冊與分派、session 的生命週期、以及 auto-index 的觸發。當你的 agent 呼叫 <code>search_graph</code>，請求就是在這裡被解包、路由到 <code>store/</code> 或 <code>cypher/</code>，再包成 JSON-RPC 回覆。</p>
+
+<hr>
+
+<h2>1. 工具註冊</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">工具 schema 表</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">每個工具 = name + description + input schema，註冊進 tools list。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>15 個工具的定義是資料導向的：每個工具列出參數（<code>name</code>/<code>label</code>/<code>qn</code>…）、型別、是否必填。MCP client 靠這份 schema 知道怎麼呼叫。工具的實際執行是 <code>switch</code> 或查表分派到對應 handler。</p>
+<div class="anno-para"><strong>教學重點</strong>：MCP 的「工具」在本質上就是「有 JSON schema 的 RPC endpoint」——理解這張表就理解整個工具層的形狀。</div>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">cbm_mcp_get_tool_name() · cbm_mcp_get_arguments()</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">從 JSON-RPC 請求取出 tool name 與參數。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>JSON-RPC 2.0 的 <code>tools/call</code> 請求 body 有 <code>name</code> 與 <code>arguments</code>。這兩個函式是解包的入口——避免每次呼叫都手動翻 JSON。</p>
+</div>
+</div>
+</details>
+
+<h2>2. Server 生命週期</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_mcp_server_new() · cbm_mcp_server_handle() · cbm_mcp_server_evict_idle()</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">server 的建立、單次請求處理、閒置回收。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>MCP server 是 stdio 協議：<code>handle()</code> 讀一行 JSON-RPC、解包、分派、回覆。<code>evict_idle()</code> 與 daemon 合作回收閒置 session 的資源。session 之間透過 daemon 共享索引、watcher、UI。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 工具分派（節選）</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">search_graph / trace_path / query_graph / get_code_snippet</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">查詢類工具：包住 store/ 的圖操作。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>查詢類工具大多是薄包裝：解析參數 → 呼叫 <code>store/</code>（或 <code>cypher/</code>）→ 包成 MCP 結果。真正的圖操作在 store 層。想深入可以接著看 <a href="store.html">store/store.c</a> 與 <a href="cypher.html">cypher/cypher.c</a>。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">index_repository</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">啟動索引（首次全索引或增量）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>接受 <code>repo_path</code>（絕對路徑），呼叫 pipeline 做索引。auto_index 開啟時，新 session 的第一次連線會自動對目前工作目錄觸發此工具。索引在 daemon 的共享 job 系統執行。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">check_index_coverage</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">檢查一組路徑的索引涵蓋率。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>回傳每個路徑是否被索引、有無 flagged/skipped/excluded 範圍。agent 的 Verify/Auditor tier 用它做證據檢查——clean 不代表完整證明，只代表「沒有記錄缺口」。</p>
+</div>
+</div>
+</details>
+
+<h2>4. JSON-RPC 錯誤處理</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">cbm_jsonrpc_format_error() · cbm_jsonrpc_format_response()</span> <span class="fn-tag">mcp.c</span><span class="fn-one-liner">包 JSON-RPC 錯誤/成功回覆。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>統一的回覆格式：錯誤帶 <code>code</code>/<code>message</code>，Cypher 的 <code>unsupported …</code> 錯誤就在這裡成形。stdout 只出 JSON-RPC（機器可讀），日誌走 stderr / daemon log。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：MCP 工具本質上是帶 JSON schema 的 RPC endpoint、mcp.c 是薄門面而重邏輯在 store/cypher、session 生命週期由 daemon 協調、以及 stdout 為何要乾淨。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

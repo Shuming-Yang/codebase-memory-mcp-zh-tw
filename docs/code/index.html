@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="../index.html">← 文件教學</a></div>
+<header>
+  <h1>程式碼對照</h1>
+  <div class="subtitle">純 C 源碼逐函數講解——每個函數一個收縮塊，中文解說配英文原始碼</div>
+</header>
+
+<div class="guide">
+<p>codebase-memory-mcp 是<strong>純 C</strong>（約 13 萬行），不像 graphify（Python）那樣好讀。這裡挑「最高教學價值」的模組逐函數講解。所有行數為對齊版 <code>main @ 2c50c77</code> 實測。</p>
+
+<div class="card-grid">
+  <a class="card" href="main.html"><span class="c-name">main.c</span><span class="c-zh">單一二進位入口：MCP stdio server + CLI + install/update/config 的分派。</span></a>
+  <a class="card" href="mcp.html"><span class="c-name">mcp/mcp.c</span><span class="c-zh">15 個 MCP 工具註冊、JSON-RPC 2.0、session detection、auto-index。</span></a>
+  <a class="card" href="store.html"><span class="c-name">store/store.c</span><span class="c-zh">SQLite 節點/邊/遍歷/搜尋/Louvain 社群偵測。</span></a>
+  <a class="card" href="cypher.html"><span class="c-name">cypher/cypher.c</span><span class="c-zh">openCypher 唯讀子集的 lexer→parser→planner→executor。</span></a>
+  <a class="card" href="cli.html"><span class="c-name">cli/cli.c</span><span class="c-zh">install/uninstall/update/config、43 個 client surface、hook 安裝。</span></a>
+  <a class="card" href="pipeline.html"><span class="c-name">pipeline/</span><span class="c-zh">多 pass 索引的調度（pipeline.c + registry.c）。</span></a>
+  <a class="card" href="passes.html"><span class="c-name">pipeline/pass_*.c</span><span class="c-zh">各 pass 職責：parallel/pkgmap/lsp_cross/semantic_edges/cross_repo/infrascan/route_nodes…</span></a>
+  <a class="card" href="daemon.html"><span class="c-name">daemon/</span><span class="c-zh">會話協調 daemon、IPC、admission barrier、lifecycle。</span></a>
+  <a class="card" href="discover.html"><span class="c-name">discover/</span><span class="c-zh">檔案發現：.gitignore → .cbmignore → symlink 處理。</span></a>
+  <a class="card" href="semantic.html"><span class="c-name">semantic/</span><span class="c-zh">語意搜尋：nomic-embed-code（768d int8）、11-signal scoring、MinHash/ROTSQ。</span></a>
+  <a class="card" href="ui.html"><span class="c-name">ui/</span><span class="c-zh">3D 圖形 UI、embedded assets、HTTP server（localhost:9749）。</span></a>
+  <a class="card" href="tests.html"><span class="c-name">tests/</span><span class="c-zh">6,768 tests / 120 suites 測試策略、fixtures、grammar_cases。</span></a>
+</div>
+
+<div class="callout info"><strong>尚未建置</strong>：上表為規劃頁清單，各頁會逐步補齊。先完成最高價值的 <code>mcp</code> / <code>store</code> / <code>cypher</code> / <code>main</code> / <code>cli</code>。</div>
+
+<p class="hint">想先讀概念？回到<a href="../index.html">文件教學</a>，或看<a href="../../map.html">概念地圖</a>建立直覺。</p>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>Multi-Agent 支援 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>Multi-Agent 支援</h1>
+  <div class="subtitle">43 個平台、Scout/Verify/Auditor 三層、conditional/explicit</div>
+</header>
+
+<div class="guide">
+
+<h2>43 個平台</h2>
+<p><code>install</code> 設定 <strong>43 個 client surface</strong>：37 個自動偵測 + 6 個 conditional/explicit。主要平台：</p>
+<table class="platform-table">
+<tr><th>Agent</th><th>設定位置</th></tr>
+<tr><td>Claude Code</td><td><code>~/.claude.json</code> · Skill + 三層 graph agents + SessionStart/SubagentStart/PreToolUse hooks</td></tr>
+<tr><td>Codex CLI</td><td><code>$CODEX_HOME/config.toml</code> · AGENTS.md + skill + 三層唯讀 agents</td></tr>
+<tr><td>Gemini CLI</td><td><code>.gemini/settings.json</code> · GEMINI.md + 三層 subagents</td></tr>
+<tr><td>OpenCode</td><td><code>$OPENCODE_CONFIG</code> · AGENTS.md + skill + 三層 deny-by-default 唯讀 agents</td></tr>
+<tr><td>Cursor</td><td><code>.cursor/mcp.json</code> · skill + 三層 parent-handoff agents</td></tr>
+<tr><td>VS Code</td><td>Code/User/mcp.json · <code>~/.copilot/skills</code> + 三層唯讀 agents</td></tr>
+<tr><td>Windsurf</td><td><code>~/.codeium/windsurf/mcp_config.json</code> · always-on global_rules.md</td></tr>
+<tr><td>Aider / Zed / KiloCode / Qwen Code / GitHub Copilot CLI / …</td><td>各有對應 config</td></tr>
+</table>
+<p class="hint">完整 43 平台矩陣見上游 README 的 <a href="https://github.com/DeusData/codebase-memory-mcp#multi-agent-support">Multi-Agent Support</a>。</p>
+
+<h2>Conditional 的意義</h2>
+<p>「Conditional」指 installer 只在<b>已存在的 config 路徑或文件化平台證明目標 active</b> 時才寫入。它<strong>絕不</strong>：翻開實驗性 feature flag、啟用 plugin、YOLO modes、global permission bypass、或第三方指令信任。</p>
+
+<h2>Scout / Verify / Auditor 三層</h2>
+<p>有文件化 custom-agent format 的平台，installer 從一份 canonical contract 產生三層定義：</p>
+<table>
+<tr><th>Tier</th><th>定位</th><th>行為</th></tr>
+<tr><td><strong>Scout（Tier 1）</strong></td><td>快速試探發現</td><td>約 3–4 個窄呼叫；不做 absence / exhaustive-impact / dead-code 聲稱</td></tr>
+<tr><td><strong>Verify（Tier 2，預設）</strong></td><td>任務導向證據</td><td>任務導向圖證據 + 精確原始碼檢查 + 引用路徑涵蓋 + 範圍涵蓋</td></tr>
+<tr><td><strong>Auditor（Tier 3）</strong></td><td>完整稽核</td><td>受限範圍 + 目前索引 generation + 完整分頁 + 更廣關係檢查 + 明確未解限制</td></tr>
+</table>
+<p>每層都批次呼叫 <code>check_index_coverage</code> 檢查證據路徑；clean 只代表「沒有記錄缺口」，不是完整證明。更新的 migration 只覆寫 byte-identical 的先前 Verify 定義，不覆蓋使用者改過的 agents。</p>
+
+<h2>工具 profile（Kiro / Junie / Qoder / Factory）</h2>
+<p>某些平台用正向 allowlist 的 server profile 限制工具面：</p>
+<ul>
+<li><strong>Kiro</strong>：Scout 用 <code>--tool-profile scout</code>（7 個工具）、Verify/Auditor 用 <code>analysis</code>（11 個）。</li>
+<li><strong>Junie</strong>：註冊同名 server alias（schema 依 server 過濾）。</li>
+<li><strong>Qoder</strong>：named-server 選擇 + 精確 tier-specific MCP tool IDs。</li>
+<li><strong>Factory</strong>：精確 registered IDs，不用 additive <code>mcpServers</code> field。</li>
+</ul>
+
+<h2>hooks：fail-open、context-only</h2>
+<p>安裝的 hooks <strong>都是 fail-open 且 context-only</strong>：Claude 的 <code>PreToolUse</code> 觀察 Grep/Glob 並把匹配的圖符號注入 <code>additionalContext</code>；<code>PostToolUse</code> 的 <code>Read</code> 在圖無法完整解析該檔時加涵蓋 context。<strong>它永遠不拒絕或替換工具呼叫。</strong></p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：43 平台怎麼分類、conditional 為何安全、Scout/Verify/Auditor 三層差異、工具 profile 的 allowlist 哲學、以及 hooks「fail-open + context-only」的意義。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

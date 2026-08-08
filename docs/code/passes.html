@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · pass_*.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>pipeline/pass_*.c — 各 pass 職責</h1>
+  <div class="subtitle">索引管線的每一個 pass 做什麼</div>
+  <div class="badge-line">目錄：<code>src/pipeline/pass_*.c</code>（合計 19,422 行）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p>索引不是一個大函式，而是<b>一串單一職責的 pass</b>。每個 pass 讀前一 pass 的產出，把自己負責的節點/邊 publish 到 store。以下是各 pass 的職責表與代表函式。</p>
+
+<hr>
+
+<h2>結構類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">pass_definitions.c</span> <span class="fn-tag">865 行</span><span class="fn-one-liner">抽取函式/類別/方法/介面等定義節點。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>樹的第一層：從 AST 找出所有「定義」並建立對應節點（Function/Class/Method/Interface/Enum/Type…）。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_calls.c</span> <span class="fn-tag">971 行</span><span class="fn-one-liner">建 CALLS 邊（import-aware、型別推斷）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>從呼叫點建立 CALLS 邊。配合 Hybrid LSP 的型別解析，跨檔呼叫也能解析（不是單純同名匹配）。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_usages.c · pass_enrichment.c</span> <span class="fn-tag">366 / 412 行</span><span class="fn-one-liner">USAGE 邊與圖豐富化。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>pass_usages</code> 記錄「識別字被用但無法證明唯一目標」的 USAGE 邊；<code>pass_enrichment</code> 補上其他語意豐富化。</p>
+</div>
+</div>
+</details>
+
+<h2>型別類（Hybrid LSP）</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">pass_lsp_cross.c</span> <span class="fn-tag">1,600 行</span><span class="fn-one-liner">Hybrid LSP 跨檔型別解析。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>最複雜的 pass：用 import graph + 跨檔定義 registry，把呼叫解析到「Go to Definition」等級。型別解析的核心在 <code>internal/cbm/lsp/</code>。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_semantic.c · pass_semantic_edges.c</span> <span class="fn-tag">662 / 1,439 行</span><span class="fn-one-liner">語意邊（SEMANTICALLY_RELATED / SIMILAR_TO）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>pass_semantic</code> 產出詞彙不匹配的同語言語意關係；<code>pass_semantic_edges</code> 用相似度分數決定邊（score ≥ 0.80）。<code>pass_similarity</code>（357 行）用 MinHash + LSH 做近複製偵測。</p>
+</div>
+</div>
+</details>
+
+<h2>服務類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">pass_route_nodes.c</span> <span class="fn-tag">1,231 行</span><span class="fn-one-liner">REST 端點變一級圖實體（Route 節點）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>掃描 HTTP 路由宣告（framework 特定），建立 Route 節點 + HANDLES 邊連到 handler。這是 <code>get_architecture</code> 的 routes 資料來源。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_cross_repo.c</span> <span class="fn-tag">1,356 行</span><span class="fn-one-liner">跨 repo 的 CROSS_* 邊。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>多 repo index 進同一 store 時，連結跨 repo 的呼叫/引用。<code>pass_pkgmap</code>（2,119 行）做套件解析（package.json / go.mod / Cargo.toml…）。</p>
+</div>
+</div>
+</details>
+
+<h2>IaC 類</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">pass_infrascan.c · pass_k8s.c</span> <span class="fn-tag">1,329 / 698 行</span><span class="fn-one-liner">Dockerfile、K8s manifests、Kustomize overlays。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>基礎設施即程式碼也進圖：Dockerfile 的 RUN/ENV、K8s manifests 的 Resource 節點、Kustomize overlays 的 Module 節點 + IMPORTS 邊。</p>
+</div>
+</div>
+</details>
+
+<h2>變更類</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">pass_gitdiff.c · pass_githistory.c · pass_compile_commands.c · pass_complexity.c</span> <span class="fn-tag">190 / 525 / 285 / 207 行</span><span class="fn-one-liner">變更耦合、編譯旗標、複雜度。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>pass_gitdiff/githistory</code> 產出 <code>FILE_CHANGES_WITH</code>（detect_changes 的 blast radius 用）；<code>pass_compile_commands</code> 解析 <code>compile_commands.json</code>；<code>pass_complexity</code> 算 Halstead-lite 等複雜度。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：索引被拆成單一職責的 pass、型別解析由 pass_lsp_cross 負責、Route/Resource 節點來自 pass_route_nodes/infrascan、跨 repo 與相似度各由哪個 pass 產出。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

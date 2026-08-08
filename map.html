@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>概念地圖 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="index.html">首頁</a>
+  <a href="map.html">概念地圖</a>
+  <a href="learning-path.html">學習路線</a>
+  <a href="install.html">安裝指南</a>
+  <a href="docs/index.html">文件教學</a>
+  <a href="docs/code/index.html">程式碼對照</a>
+  <a href="docs/worked.html">實作案例</a>
+  <a href="about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 回首頁</a></div>
+<header>
+  <h1>概念地圖</h1>
+  <div class="subtitle">codebase-memory-mcp 知識圖譜的核心概念，一張圖看懂</div>
+</header>
+
+<div class="guide">
+<p>CBM 做的事可以一句話講完：<strong>把你整個專案變成一張可查詢的知識圖譜</strong>，然後透過 MCP 用「問結構問題」取代「逐檔 grep」。下面從「輸入」到「輸出」拆解這張圖長什麼樣。</p>
+
+<h2>1. 輸入：你的 repo（加 IaC）</h2>
+<p>CBM 是結構分析後端，<strong>不內建 LLM</strong>——你的 MCP client（Claude Code / OpenCode 等）就是翻譯官。索引管線吃整個 repo：</p>
+<div class="concept-map">
+  <div class="cm-row">
+    <a class="cm-node service" href="docs/how-it-works.html"><span class="label">程式碼</span><span class="tag">158 種 tree-sitter 文法 · 本機解析 · 零 LLM</span></a>
+    <a class="cm-node on-ramp" href="docs/how-it-works.html"><span class="label">套件清單</span><span class="tag">package.json · go.mod · Cargo.toml · pyproject.toml…</span></a>
+    <a class="cm-node on-ramp" href="docs/how-it-works.html"><span class="label">IaC 檔案</span><span class="tag">Dockerfile · K8s manifests · Kustomize overlays → Resource/Module 節點</span></a>
+    <a class="cm-node meta" href="docs/how-it-works.html"><span class="label">Git 歷史</span><span class="tag">git diff / githistory pass · change coupling</span></a>
+  </div>
+</div>
+
+<h2>2. 索引流程：多 pass 管線</h2>
+<p>來源：<a href="docs/architecture.html">架構總覽</a>。tree-sitter 抽取定義與呼叫，再疊上 <strong>Hybrid LSP</strong> 型別解析（"Go to Definition" 等級）：</p>
+<div class="concept-map">
+  <div class="cm-row">
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">discover()</span><span class="tag">檔案發現</span><span class="pill">discover/</span></a>
+    <span class="cm-arrow">→</span>
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">structure</span><span class="tag">AST 抽取 158 語系</span><span class="pill">pass_calls / pass_definitions</span></a>
+    <span class="cm-arrow">→</span>
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">semantic</span><span class="tag">Hybrid LSP 型別解析</span><span class="pill">pass_lsp_cross / lsp_surface</span></a>
+    <span class="cm-arrow">→</span>
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">route</span><span class="tag">HTTP 路由節點</span><span class="pill">pass_route_nodes</span></a>
+    <span class="cm-arrow">→</span>
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">cross</span><span class="tag">跨服務/跨 repo</span><span class="pill">pass_cross_repo / pass_infrascan</span></a>
+    <span class="cm-arrow">→</span>
+    <a class="cm-node" href="docs/code/pipeline.html"><span class="label">store()</span><span class="tag">SQLite 落盤</span><span class="pill">store/</span></a>
+  </div>
+  <div class="cm-caption">RAM-first：LZ4 壓縮讀入、in-memory SQLite、結束才單次 dump，記憶體用完即釋放</div>
+</div>
+
+<h2>3. 圖的資料模型</h2>
+<div class="concept-map">
+  <div class="cm-row">
+    <a class="cm-node" href="docs/data-model.html"><span class="label">Node 節點</span><span class="tag">13 種 label：Project/Package/File/Class/Function/Method/Route…</span></a>
+    <a class="cm-node" href="docs/data-model.html"><span class="label">Edge 邊</span><span class="tag">23 種：CALLS / IMPORTS / DEFINES / HTTP_CALLS / SIMILAR_TO…</span></a>
+    <a class="cm-node meta" href="docs/data-model.html"><span class="label">Qualified Name</span><span class="tag">&lt;project&gt;.&lt;path_parts&gt;.&lt;name&gt; —— get_code_snippet 用</span></a>
+  </div>
+</div>
+
+<h2>4. 15 個 MCP 工具</h2>
+<p>這 15 個工具就是 agent 讀圖的方式（<a href="docs/mcp-tools.html">全解</a>）：</p>
+<table>
+<tr><th>類別</th><th>工具</th></tr>
+<tr><td><strong>索引</strong></td><td><code>index_repository</code> · <code>list_projects</code> · <code>delete_project</code> · <code>index_status</code></td></tr>
+<tr><td><strong>查詢</strong></td><td><code>search_graph</code> · <code>trace_path</code> · <code>detect_changes</code> · <code>query_graph</code>（Cypher）· <code>get_graph_schema</code></td></tr>
+<tr><td><strong>讀取</strong></td><td><code>get_code_snippet</code> · <code>get_architecture</code> · <code>search_code</code></td></tr>
+<tr><td><strong>維運</strong></td><td><code>manage_adr</code> · <code>check_index_coverage</code> · <code>ingest_traces</code></td></tr>
+</table>
+
+<h2>5. 查詢範例</h2>
+<pre><code>// 誰呼叫了 ProcessOrder？
+trace_path(function_name="ProcessOrder", direction="inbound")
+
+// 結構搜尋
+search_graph(name_pattern=".*Handler.*", label="Function")
+
+// Cypher 死碼偵測
+query_graph("MATCH (f:Function) WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() } RETURN f.name")</code></pre>
+
+<h2>6. 社群偵測與語意</h2>
+<div class="concept-map">
+  <div class="cm-row">
+    <a class="cm-node service" href="docs/mcp-tools.html"><span class="label">Louvain 社群</span><span class="tag">依 CALLS 邊密度分群 → get_architecture 的 cluster</span></a>
+    <a class="cm-node" href="docs/how-it-works.html"><span class="label">Hybrid LSP</span><span class="tag">輕量 C 型別解析，相容 tsserver/pyright/gopls/Roslyn</span></a>
+    <a class="cm-node" href="docs/how-it-works.html"><span class="label">語意搜尋</span><span class="tag">nomic-embed-code（768d int8）編譯進二進位 · 11-signal 計分</span></a>
+    <a class="cm-node" href="docs/data-model.html"><span class="label">SIMILAR_TO</span><span class="tag">MinHash + LSH 近複製偵測</span></a>
+  </div>
+</div>
+
+<h2>7. 產出</h2>
+<div class="concept-map">
+  <div class="cm-row">
+    <a class="cm-node" href="docs/graph-artifact.html"><span class="label">graph.db.zst</span><span class="tag">可 commit 的 zstd 壓縮圖快照（團隊共享，8–13:1）</span></a>
+    <a class="cm-node" href="docs/index.html"><span class="label">3D UI</span><span class="tag">--ui 變體 · localhost:9749 互動圖形界面</span></a>
+  </div>
+</div>
+
+<div class="callout info"><strong>小結</strong>：index 一次、之後只做增量 → 圖存在 SQLite（WAL、ACID）→ 每次查詢比讀原始檔省 99.2% token。Daemon 會跨 session 共享 watcher/索引/UI，所有處理 100% 本機。</div>
+
+<p class="hint">延伸閱讀：<a href="docs/how-it-works.html">運作原理詳解</a> · <a href="docs/architecture.html">架構總覽</a> · <a href="docs/mcp-tools.html">15 個 MCP 工具</a> · <a href="docs/cypher.html">Cypher</a> · <a href="docs/performance.html">效能基準</a></p>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

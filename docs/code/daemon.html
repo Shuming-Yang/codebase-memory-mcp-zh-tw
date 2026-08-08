@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · daemon/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>daemon/ — 會話協調</h1>
+  <div class="subtitle">一帳號一 daemon、IPC、admission barrier</div>
+  <div class="badge-line">目錄：<code>src/daemon/</code>（daemon.c 847 行 + application.c + ipc.c + runtime.c…）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>daemon/</code> 是「每帳號一個協調者」的實作。它管：daemon 的啟動/bootstrap（<code>bootstrap.c</code>）、前台 session 的 IPC（<code>ipc.c</code>）、應用程式 job 排程（<code>application.c</code>）、與 runtime 生命週期（<code>runtime.c</code>）。</p>
+
+<hr>
+
+<h2>1. Daemon 啟動</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">bootstrap.c · daemon.c</span> <span class="fn-tag">daemon/</span><span class="fn-one-liner">daemon 的啟動、鎖、與生命周期。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>第一個 daemon-backed session 啟動 daemon（bootstrap）；最後一個 session 關閉它。daemon 持有共享的 watcher/索引 jobs/UI。</p>
+</div>
+</div>
+</details>
+
+<h2>2. IPC</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">ipc.c（cbm_daemon_ipc_*）</span> <span class="fn-tag">daemon/</span><span class="fn-one-liner">前台 session ↔ daemon 的通訊。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>IPCS 層封裝 session 與 daemon 之間的通訊：endpoint 位址、frame 收送、lifetime reservation、startup gate。平台差異（POSIX socket vs Windows）在 <code>ipc_*</code> 相關檔案中抽象。</p>
+</div>
+</div>
+</details>
+
+<h2>3. Application 排程</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">application.c（cbm_daemon_application_*）</span> <span class="fn-tag">daemon/</span><span class="fn-one-liner">索引 job 的排程、執行、取消。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>daemon 收到「幫我索引 X」就排一個 application job。job 有物理上限、busy queue、可被 activation 取消。測試透過 <code>_for_test()</code> 鉤子注入失敗/延遲。</p>
+</div>
+</div>
+</details>
+
+<h2>4. Runtime & admission</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">runtime.c · project_lock.c</span> <span class="fn-tag">daemon/</span><span class="fn-one-liner">runtime worker 與 per-project 鎖。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>runtime</code> 管理 daemon 的 worker/process 生命週期；<code>project_lock</code> 提供 per-project 的 OS-backed 鎖，序列化同專案的並行寫入（CLI 與 MCP session 共用）。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：daemon 的 bootstrap/lifecycle、IPC 封裝了平台差異、索引是 daemon 的 application job、以及 per-project lock 讓 CLI/MCP 並行寫入不會衝突。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

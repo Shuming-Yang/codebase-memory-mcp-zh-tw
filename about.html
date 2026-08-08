@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>關於本站 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="index.html">首頁</a>
+  <a href="map.html">概念地圖</a>
+  <a href="learning-path.html">學習路線</a>
+  <a href="install.html">安裝指南</a>
+  <a href="docs/index.html">文件教學</a>
+  <a href="docs/code/index.html">程式碼對照</a>
+  <a href="docs/worked.html">實作案例</a>
+  <a href="about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 回首頁</a></div>
+<header>
+  <h1>關於本站</h1>
+  <div class="subtitle">授權、方法、與重要聲明</div>
+</header>
+
+<div class="guide">
+
+<div class="license-box">
+<strong>免責聲明</strong>：本站為 <strong>第三方社群教學站</strong>，與 <strong>DeusData 無關</strong>，不代表 codebase-memory-mcp 官方立場。codebase-memory-mcp 與 DeusData 為其各自權利人所有，本站僅在「描述性/教學」語境下使用該名稱。
+</div>
+
+<h2>授權</h2>
+<p>上游 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 以 <strong>MIT License</strong> 授權（<code>Copyright (c) 2025 DeusData</code>）。本站遵循 MIT 的要求，照抄了上游授權檔：</p>
+<ul>
+<li><a href="LICENSE">LICENSE</a> — 上游 MIT 全文照抄（引用原始碼片段需保留此聲明）</li>
+<li><a href="NOTICE">NOTICE</a> — 聲明本站是上游的非官方教學站、引用範圍、本站原創內容亦以 MIT 釋出</li>
+</ul>
+<p>本站修改內容（中文解說、網站排版）以 MIT 釋出。官方 docs 資產（如截圖）引用時標註出處；未使用官方 logo 作為網站視覺。網站不做任何二進位散布，因此上游 vendored 第三方元件的 NOTICES 義務（見上游 <a href="https://github.com/DeusData/codebase-memory-mcp/blob/main/THIRD_PARTY.md">THIRD_PARTY.md</a>）不適用於本站——僅在案例頁如實標註 graphify 產出出處（Apache-2.0）。</p>
+
+<h2>上游版本釘選</h2>
+<div class="sync-panel"><div class="sync-meta">對齊上游 <code>DeusData/codebase-memory-mcp</code> 分支 <code>main</code>（<code>2c50c77</code>，2026-08-08）· 發行版 <code>v0.9.0</code> · <code>check-upstream</code> workflow 每月檢查一次。</div></div>
+
+<h2>教學方法</h2>
+<ol class="timeline">
+<li><span class="t-stage">中英對照</span>中文口語解說為主文，英文原文與程式碼保留上游原貌（文件頁用可展開的原文、程式碼頁用註解版原始碼）。</li>
+<li><span class="t-stage">程式碼逐函數</span>所有講到的 C 函數一個 <code>&lt;details&gt;</code> 收縮塊（signature + 中文用途 + 關鍵邏輯），核心函數附逐行中文註解；短函數用段落式說明。</li>
+<li><span class="t-stage">策展而非鏡像</span>13 萬行 C 的 repo 不逐檔翻譯，挑「值得教學」的模組（mcp/store/cypher/cli/pipeline/daemon…）深入講解。</li>
+<li><span class="t-stage">實機示範</span>收錄真實工具產出（graphify 互動圖、CBM CLI 查詢輸出），訪客可直接操作，並提供可重現步驟。</li>
+</ol>
+
+<h2>關於 codebase-memory-mcp</h2>
+<p>codebase-memory-mcp 是一個用純 C 寫的高效能 code intelligence MCP server：用 tree-sitter（158 語系）+ Hybrid LSP 型別解析，把 repo 在毫秒級索引成持久化知識圖譜，提供 15 個 MCP 工具讓 agent 用「問結構問題」取代逐檔 grep。單一靜態二進位、零依賴、100% 本機處理。</p>
+<ul>
+<li>官方 repo：<a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a></li>
+<li>研究論文：<a href="https://arxiv.org/abs/2603.27277">arXiv:2603.27277</a></li>
+<li>官方網站：<a href="https://deusdata.github.io/codebase-memory-mcp/">deusdata.github.io/codebase-memory-mcp</a></li>
+<li>授權：MIT（<code>Copyright (c) 2025 DeusData</code>）</li>
+</ul>
+
+<h2>本站架構</h2>
+<p>純 HTML + CSS + JS 靜態站，無框架、無建置步驟，部署於 GitHub Pages（<code>main</code> 根目錄）。由 OpenCode 協助建置，中文解說由 OpenCode 撰寫。</p>
+<ul>
+<li>本站 repo：<a href="https://github.com/Shuming-Yang/codebase-memory-mcp-zh-tw">Shuming-Yang/codebase-memory-mcp-zh-tw</a></li>
+</ul>
+
+<div class="callout info"><strong>回饋</strong>：這是教學站，不是官方文件。發現翻譯錯誤或想補充主題，歡迎在 <a href="https://github.com/Shuming-Yang/codebase-memory-mcp-zh-tw/issues">本站 repo issues</a> 提出。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

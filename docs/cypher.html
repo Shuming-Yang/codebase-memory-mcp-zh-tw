@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>Cypher 查詢 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>Cypher 查詢</h1>
+  <div class="subtitle">openCypher 唯讀子集——從語法到死碼偵測</div>
+</header>
+
+<div class="guide">
+
+<h2>這是什麼</h2>
+<p><code>query_graph</code> 工具支援一個 <strong>openCypher 唯讀子集</strong>。它不支援寫入（<code>MERGE</code>/<code>CALL</code>）、不支援 list/map literals 等——超出子集的語法會回傳<strong>明確的 <code>unsupported …</code> 錯誤</strong>，而不是靜默回空結果。</p>
+
+<h2>支援的 Clause</h2>
+<table>
+<tr><th>Clause</th><th>說明</th></tr>
+<tr><td><code>MATCH</code> / <code>OPTIONAL MATCH</code></td><td>可多個 MATCH</td></tr>
+<tr><td><code>WHERE</code></td><td>含 <code>WITH … WHERE</code></td></tr>
+<tr><td><code>WITH</code></td><td>管線傳遞</td></tr>
+<tr><td><code>RETURN</code> / <code>ORDER BY</code> / <code>SKIP</code> / <code>LIMIT</code> / <code>DISTINCT</code></td><td>結果輸出與分頁</td></tr>
+<tr><td><code>UNWIND</code></td><td>展開集合</td></tr>
+<tr><td><code>UNION</code> / <code>UNION ALL</code></td><td>合併查詢</td></tr>
+<tr><td><code>CASE</code></td><td>條件運算</td></tr>
+</table>
+
+<h2>支援的 Pattern</h2>
+<table>
+<tr><th>Pattern</th><th>說明</th></tr>
+<tr><td>labelled nodes</td><td><code>(f:Function)</code></td></tr>
+<tr><td>label alternation</td><td><code>(n:A|B)</code></td></tr>
+<tr><td>relationship types / direction</td><td><code>-[r:CALLS]-&gt;</code> / <code>&lt;-[r:USES]-</code></td></tr>
+<tr><td>variable-length paths</td><td><code>[*1..3]</code></td></tr>
+<tr><td>inline property maps</td><td><code>(n {name: 'foo'})</code></td></tr>
+</table>
+
+<h2>WHERE 支援</h2>
+<table>
+<tr><th>運算子</th><th>說明</th></tr>
+<tr><td><code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code></td><td>比較</td></tr>
+<tr><td><code>AND / OR / XOR / NOT</code></td><td>邏輯</td></tr>
+<tr><td><code>IN</code></td><td>屬於集合</td></tr>
+<tr><td><code>CONTAINS</code> / <code>STARTS WITH</code> / <code>ENDS WITH</code></td><td>字串匹配</td></tr>
+<tr><td><code>IS [NOT] NULL</code></td><td>空值</td></tr>
+<tr><td><code>=~</code></td><td>regex</td></tr>
+<tr><td><code>n:Label</code></td><td>label 測試</td></tr>
+<tr><td><code>EXISTS { … }</code></td><td><strong>單跳 existence</strong>——死碼偵測的關鍵</td></tr>
+</table>
+
+<h2>Aggregates 與 Functions</h2>
+<ul>
+<li><strong>Aggregates</strong>：<code>count</code>（+<code>DISTINCT</code>）、<code>sum</code>、<code>avg</code>、<code>min</code>、<code>max</code>、<code>collect</code></li>
+<li><strong>圖函式</strong>：<code>labels</code>、<code>type</code>、<code>id</code>、<code>keys</code>、<code>properties</code></li>
+<li><strong>字串/轉型</strong>：<code>toLower/toUpper/toString/toInteger/toFloat/toBoolean</code>、<code>trim/ltrim/rtrim</code>、<code>reverse</code>、<code>coalesce</code>、<code>substring</code>、<code>replace</code>、<code>left</code>、<code>right</code>、<code>size</code>、<code>length</code></li>
+</ul>
+
+<h2>實用查詢</h2>
+
+<pre><code>-- 1. 死碼偵測：沒有被任何 CALLS 指向的函式
+MATCH (f:Function)
+WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() }
+RETURN f.name
+LIMIT 20</code></pre>
+
+<pre><code>-- 2. main 呼叫鏈
+MATCH (f:Function)-[:CALLS]-&gt;(g)
+WHERE f.name = 'main'
+RETURN g.name, count(*) AS calls
+ORDER BY calls DESC</code></pre>
+
+<pre><code>-- 3. 兩層呼叫
+MATCH (f:Function)-[:CALLS*1..2]-&gt;(g)
+WHERE f.name = 'main'
+RETURN DISTINCT g.name
+LIMIT 50</code></pre>
+
+<pre><code>-- 4. 某套件內所有路由節點
+MATCH (r:Route)-[:CONTAINS*0..]-&gt;(p:Package)
+WHERE p.name = 'auth'
+RETURN r.method, r.path</code></pre>
+
+<div class="callout warn"><strong>注意</strong>：Cypher 是<strong>唯讀</strong>。需要「整棵子圖被當值」的 path functions、parameters、comprehensions 都不支援——會明確報錯而非亂給。</div>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：Cypher 子集的邊界（讀可以、寫不行）、EXISTS 子查詢如何做死碼偵測、variable-length path 的寫法、以及不支援的語法會明確報錯。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

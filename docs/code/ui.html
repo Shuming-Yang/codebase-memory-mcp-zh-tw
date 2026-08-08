@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · ui/ · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>ui/ — 3D 圖形界面</h1>
+  <div class="subtitle">嵌入式 HTTP server + 3D graph visualization</div>
+  <div class="badge-line">目錄：<code>src/ui/</code>（httpd.c + http_server.c + layout3d.c + config.c）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>ui/</code> 是「<code>--ui</code> 變體」的內建 3D 圖形界面：一個嵌入式 HTTP server 服務前端（<code>graph-ui/</code>，React + three.js），提供 <code>localhost:9749</code> 的互動知識圖譜瀏覽器。UI 由共享 daemon 擁有——並行 session 不會開重複的 HTTP server。</p>
+
+<hr>
+
+<h2>1. HTTP server</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">httpd.c · http_server.c</span> <span class="fn-tag">ui/</span><span class="fn-one-liner">嵌入式 HTTP server：靜態資源 + JSON API。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>提供前端 bundle（embedded assets）與圖資料 API（節點/邊/社群、搜尋、<code>POST /api/index</code>）。上游特別註明 HTTP server 是<strong>第一方實作</strong>——沒有用第三方 HTTP library。</p>
+</div>
+</div>
+</details>
+
+<h2>2. 3D 佈局</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">layout3d.c</span> <span class="fn-tag">ui/</span><span class="fn-one-liner">3D 力導向佈局的圖側計算。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>前端用 three.js 渲染，但節點的初始 3D 座標由 C 側算好（<code>layout3d.c</code>），前端直接吃座標做 physics。跨 repo 時用 multi-galaxy 佈局呈現不同 repo 的「星系」。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 設定與嵌入</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">config.c · embedded_assets.h</span> <span class="fn-tag">ui/</span><span class="fn-one-liner">UI 設定與前端 bundle 嵌入。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>config.c</code> 管 <code>ui_enabled</code> / <code>ui_port</code>（存在 cache 的 config.json）；<code>embedded_assets.h</code> 把建置好的 graph-ui 前端編進二進位（非 <code>--with-ui</code> 的 lean build 用 <code>embedded_stub.c</code>）。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：UI 是嵌入式 HTTP server + 前端、3D 座標由 C 側預算好、UI 由 daemon 共享避免重複 server、以及 lean vs ui 兩種 build 的差別。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

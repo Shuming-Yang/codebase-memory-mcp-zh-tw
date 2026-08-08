@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>實作案例 · CBM 自己 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="../code/index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="../worked.html">← 實作案例</a></div>
+<header>
+  <h1>用 graphify 分析 codebase-memory-mcp</h1>
+  <div class="subtitle">meta 示範：用「另一個知識圖譜工具」掃描 CBM 自己的源碼</div>
+  <div class="badge-line">語料：<code>src/</code> + <code>tests/</code>（440 檔）· 對齊 commit <code>2c50c77</code> · graphify 0.9.36</div>
+</header>
+
+<div class="guide">
+
+<div class="license-box"><strong>產出出處</strong>：本案例的互動圖與報告由 <a href="https://github.com/Graphify-Labs/graphify">graphify</a>（Apache-2.0）產生。graphify 是另一個開源知識圖譜工具（Leiden 社群偵測、EXTRACTED/INFERRED 信任標籤、互動 HTML 輸出）；本站用它來<b>分析 codebase-memory-mcp 自己</b>，呈現「知識圖譜工具 × 知識圖譜工具」的對照。產出資料在 <code>worked/cbm-source/</code>。</div>
+
+<h2>為什麼做這個案例</h2>
+<p>codebase-memory-mcp（CBM）本身就是一個把 codebase 變知識圖譜的工具。用 graphify 再掃一次 CBM 的源碼，有幾個教學價值：</p>
+<ul>
+<li><strong>對照兩種工具哲學</strong>：graphify 偏向「一鍵互動圖 + 審計報告」，CBM 偏向「15 個 MCP 工具 + 即時查詢」。同一份 C 語料，兩者都能給出節點/邊/社群。</li>
+<li><strong>驗證 CBM 的模組結構</strong>：graphify 的社群偵測自然地把 343 個社群對應到 CBM 的模組（Cypher engine、MCP server、Daemon IPC…）——側面驗證 CBM 的架構乾淨度。</li>
+<li><strong>meta 示範</strong>：看一個「會建知識圖譜的 repo」被另一個工具畫成圖。</li>
+</ul>
+
+<h2>語料</h2>
+<p>上游 <code>main @ 2c50c77</code>（2026-08-08）的第一方程式碼：</p>
+<table>
+<tr><th>部分</th><th>內容</th><th>檔案數</th></tr>
+<tr><td><code>src/</code></td><td>CBM 主體 C 源碼（main/mcp/store/cypher/cli/pipeline/daemon/discover/semantic/ui…）</td><td>193</td></tr>
+<tr><td><code>tests/</code></td><td>測試（6,768 tests 的 C 測試碼、Hybrid LSP 各語系測試）</td><td>247</td></tr>
+<tr><td>合計</td><td>純 C 語料（<code>--code-only</code>，零 LLM 成本）</td><td><strong>440</strong></td></tr>
+</table>
+<p class="hint">刻意排除 <code>internal/cbm/vendored/</code>（974 檔第三方 tree-sitter grammars 生成碼）與 docs/assets——圖要呈現「CBM 自己的工程」，不是第三方生成碼。</p>
+
+<h2>本站跑的數字</h2>
+<table>
+<tr><th>指標</th><th>本站實測</th></tr>
+<tr><td>語料檔案數</td><td>440</td></tr>
+<tr><td>節點</td><td><strong>15,815</strong></td></tr>
+<tr><td>邊</td><td><strong>61,988</strong></td></tr>
+<tr><td>社群</td><td><strong>343</strong>（最大社群 602 節點 = C++ Hybrid LSP tests）</td></tr>
+<tr><td>互動圖</td><td>社群聚合檢視（343 社群節點 / 1,977 跨社群邊）</td></tr>
+<tr><td>LLM / API 成本</td><td>0（純 AST，本機執行）</td></tr>
+<tr><td>工具版本</td><td>graphify 0.9.36</td></tr>
+</table>
+
+<h2>God Nodes（核心抽象）</h2>
+<p>graphify 報告指出連接最多邊的「樞紐節點」——正是 CBM 架構中最關鍵的函式：</p>
+<table>
+<tr><th>函式</th><th>邊數</th><th>位置</th></tr>
+<tr><td><code>find_resolved()</code></td><td>679</td><td>LSP 解析核心（各語系共用）</td></tr>
+<tr><td><code>extract_cpp()</code></td><td>609</td><td>C++ AST 抽取器</td></tr>
+<tr><td><code>cbm_store_close()</code></td><td>568</td><td>SQLite 圖儲存關閉（全域生命週期）</td></tr>
+<tr><td><code>cbm_mkdtemp()</code></td><td>522</td><td>平台相容的臨時目錄（跨模組共用）</td></tr>
+<tr><td><code>extract_rust()</code></td><td>498</td><td>Rust AST 抽取器</td></tr>
+</table>
+
+<h2>社群對應模組</h2>
+<p>343 個社群，最大的幾個直接對應 CBM 的模組：</p>
+<table>
+<tr><th>社群（graphify 命名）</th><th>節點</th><th>對應 CBM 模組</th></tr>
+<tr><td>C++ Hybrid LSP tests</td><td>602</td><td><code>tests/test_c_lsp.c</code></td></tr>
+<tr><td>Rust LSP resolution tests</td><td>355</td><td><code>tests/test_rust_lsp.c</code></td></tr>
+<tr><td>Agent registry & profiles</td><td>287</td><td><code>src/cli/agent_profiles.c</code></td></tr>
+<tr><td>MCP JSON-RPC server</td><td>219</td><td><code>src/mcp/mcp.c</code></td></tr>
+<tr><td>Daemon IPC & sockets</td><td>196</td><td><code>src/daemon/ipc.c</code></td></tr>
+<tr><td>Cypher query engine</td><td>136</td><td><code>src/cypher/cypher.c</code></td></tr>
+<tr><td>File discovery & gitignore</td><td>147</td><td><code>src/discover/</code></td></tr>
+</table>
+<p class="hint">完整 343 社群清單見 <a href="../../worked/cbm-source/GRAPH_REPORT.md" target="_blank">GRAPH_REPORT.md</a>。</p>
+
+<h2>互動圖</h2>
+<div class="graph-embed">
+  <div class="graph-embed-bar">
+    <span class="g-title">CBM 源碼知識圖譜（社群聚合檢視）</span>
+    <span class="g-links"><a href="../../worked/cbm-source/graph.html" target="_blank">英文界面 ↗</a><a href="../../worked/cbm-source/graph-zh.html" target="_blank">中文界面 ↗</a></span>
+  </div>
+  <iframe src="../../worked/cbm-source/graph-zh.html" title="CBM source knowledge graph"></iframe>
+</div>
+<p class="hint">因為全圖 15,815 節點超過 graphify 的 5,000 節點視覺化上限，自動聚合為社群檢視——這反而是好事：一眼看到整個 CBM 的模組結構與跨模組呼叫。</p>
+
+<h2>如何重現</h2>
+<pre><code># 0. 安裝 graphify（PyPI 套件名 graphifyy，雙 y）
+uv tool install graphifyy
+
+# 1. 準備語料（只保留第一方程式碼）
+git clone https://github.com/DeusData/codebase-memory-mcp.git cbm
+git -C cbm checkout 2c50c7741ec89dbcf43c2c85e005c0b58a4dbbf3
+mkdir corpus && cp -R cbm/src corpus/ && cp -R cbm/tests corpus/
+
+# 2. 跑完整 pipeline（code-only，零 API key）
+graphify corpus --code-only
+
+# 3. 產出在 graphify-out/
+#    graph.html  互動圖（社群聚合檢視）
+#    graph.json  全量圖資料（15,815 nodes / 61,988 edges）
+#    GRAPH_REPORT.md  審計報告
+
+# 4. 中文化 UI（選擇性）
+cp graphify-out/graph.html graphify-out/graph-zh.html
+# 替換 lang="en" → lang="zh-Hant" 及 UI 字串（Search / Node Info / Communities…）</code></pre>
+
+<h2>已知限制</h2>
+<ul>
+<li>語料排除 vendored grammars 與 docs，節點數不代表 CBM 全 repo（2023 檔）。</li>
+<li>互動圖是社群聚合檢視，想看單節點細節請用 <code>graph.json</code> 或改掃 <code>src/</code> 單一目錄（193 檔，較可能落在節點級檢視範圍）。</li>
+<li>graphify 的社群偵測（Leiden）與 CBM 的 Louvain 演算法不同——數字不直接可比，本頁只做結構對照。</li>
+</ul>
+
+<div class="callout"><strong>看完這個案例你應該能說出</strong>：CBM 的模組邊界在哪、為什麼 <code>cbm_store_close()</code> 是所有模組的生命週期樞紐、以及 graphify 與 CBM 兩種知識圖譜工具的哲學差異。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>實作案例 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="../index.html">← 回首頁</a></div>
+<header>
+  <h1>實作案例</h1>
+  <div class="subtitle">真實產出的互動知識圖譜與查詢示範</div>
+</header>
+
+<div class="guide">
+<p>本站的實作案例不是示意圖——每個都是<b>真實工具跑出來的</b>。第一個案例用 <a href="https://github.com/Graphify-Labs/graphify">graphify</a> 掃描 codebase-memory-mcp 自己的源碼，做出可操作的互動知識圖譜。</p>
+
+<div class="case-grid">
+  <a class="case-card" href="case/cbm-source.html">
+    <span class="cc-name">codebase-memory-mcp 自己</span>
+    <span class="cc-en">meta · graphify × CBM</span>
+    <span class="cc-desc">用 graphify 掃描 CBM 的第一方 C 源碼（src/ + tests/，440 檔），做出 15,815 節點 / 61,988 邊 / 343 社群的互動知識圖譜——「用另一個知識圖譜工具分析知識圖譜工具」的 meta 示範。</span>
+    <span class="cc-meta"><span class="c-tag">15,815 nodes</span><span class="c-tag">61,988 edges</span><span class="c-tag">343 communities</span></span>
+  </a>
+</div>
+
+<h2>第一個案例：CBM 源碼知識圖譜</h2>
+<p>下方是<strong>真實 graphify 產出</strong>的互動圖（社群聚合檢視）。節點是 343 個功能社群（對應 CBM 的模組結構：Cypher engine、MCP server、Daemon IPC、Hybrid LSP tests…），邊是跨社群的呼叫關係。可拖曳、縮放、點節點看細節、搜尋。</p>
+
+<div class="graph-embed">
+  <div class="graph-embed-bar">
+    <span class="g-title">graphify 知識圖譜 — CBM 第一方源碼（社群聚合檢視）</span>
+    <span class="g-links"><a href="../worked/cbm-source/graph.html" target="_blank">英文界面 ↗</a><a href="../worked/cbm-source/graph-zh.html" target="_blank">中文界面 ↗</a><a href="../worked/cbm-source/GRAPH_REPORT.md" target="_blank">審計報告 ↗</a></span>
+  </div>
+  <iframe src="../worked/cbm-source/graph-zh.html" title="CBM source knowledge graph"></iframe>
+</div>
+
+<div class="callout info"><strong>怎麼跑的</strong>：graphify 0.9.36（PyPI <code>graphifyy</code>），對上游 <code>src/</code> + <code>tests/</code>（對齊 commit <code>2c50c77</code>）跑 code-only AST 抽取——純本機、零 LLM、零 API key。完整重現步驟在<a href="case/cbm-source.html">案例頁</a>。</div>
+
+<p class="hint">想看 CBM 對「別的工具」的查詢能力（trace_path / Cypher 死碼），案例會持續新增。</p>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>安全模型 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>安全模型</h1>
+  <div class="subtitle">SLSA3 / cosign / VirusTotal / CodeQL、零依賴、無 telemetry</div>
+</header>
+
+<div class="guide">
+
+<h2>這個工具做什麼（先講清楚）</h2>
+<p>CBM <strong>讀取你的 codebase，並寫入你的 agent 設定檔</strong>——這是它的設計本質。安裝前先知道這件事；想先稽核再看原始碼。</p>
+
+<h2>Supply chain 安全</h2>
+<table>
+<tr><th>防護層</th><th>說明</th></tr>
+<tr><td><strong>VirusTotal</strong></td><td>每個 release 二進位被 70+ 防毒引擎掃描（零偵測才發布）</td></tr>
+<tr><td><strong>SLSA Level 3</strong></td><td>受信任的 GitHub Actions 建置流程產生的加密建置來源證明；用 <code>gh attestation verify</code> 驗證</td></tr>
+<tr><td><strong>Sigstore cosign</strong></td><td>所有 artifact 的 keyless 簽章</td></tr>
+<tr><td><strong>SHA-256 checksums</strong></td><td>每個 release 附 <code>checksums.txt</code>，安裝指令碼在解壓前驗證</td></tr>
+<tr><td><strong>CodeQL SAST</strong></td><td>有未關閉的 alert 就擋 release pipeline</td></tr>
+<tr><td><strong>零 runtime 依賴</strong></td><td>無供應鏈傳遞風險——所有函式庫在編譯時 vendored</td></tr>
+</table>
+
+<h2>隱私</h2>
+<ul>
+<li><strong>100% 本機處理</strong>：所有解析、索引、語意搜尋都在本機跑，你的程式碼不會離開機器。</li>
+<li><strong>無 telemetry、無 phoning home</strong>：CBM 不會自行發任何網路請求，不會背景檢查新版本。</li>
+<li><strong>內建 embedding 模型</strong>：nomic-embed-code（768d int8）編譯進二進位——語意搜尋不需要 API key、Ollama、Docker。</li>
+</ul>
+
+<h2>安裝的安全性設計</h2>
+<ul>
+<li><strong>不搞 in-process updater</strong>：更新交給外部 install.sh（避免二進位裡內建「下載 + 解壓 + 執行」的 dropper 特徵）。</li>
+<li><strong>不亂開設定</strong>：installer 絕不翻開實驗性 feature flag、不啟用 plugin、不做 global permission bypass、不信任第三方指令。</li>
+<li><strong>Conditional 安裝</strong>：只有當平台的 marker / 已存在的 config 路徑證明它 active 才寫入設定。</li>
+<li><strong>exact-build admission barrier</strong>：所有 CBM process 必須同版本、同建置、同 cache root，防止混版狀態。</li>
+</ul>
+
+<h2>診斷 log（疑難排解用）</h2>
+<p>因為無 telemetry，出了無法重現的問題時要自己抓資料。設 <code>CBM_DIAGNOSTICS=1</code> 後重開 daemon session：</p>
+<table>
+<tr><th>檔案</th><th>內容</th></tr>
+<tr><td><code>trajectory.ndjson</code></td><td>每 5 秒一行記憶體軌跡（rss/committed/peak/page_faults/fd/queries）——記憶體/洩漏回報要的就是它</td></tr>
+<tr><td><code>snapshot.json</code></td><td>最新快照（乾淨退出時移除）</td></tr>
+</table>
+<p>路徑在 <code>${CBM_CACHE_DIR}/logs/cbm-daemon.log</code> 的 <code>diagnostics.start</code> 事件裡；使用隨機目錄避免其他帳號預置惡意連結。</p>
+
+<h2>重要環境變數</h2>
+<table>
+<tr><th>變數</th><th>用途</th></tr>
+<tr><td><code>CBM_ALLOWED_ROOT</code></td><td>把 <code>index_repository</code> 限制在此目錄內（未被信任的呼叫者/多租戶部署時用）</td></tr>
+<tr><td><code>CBM_CACHE_DIR</code></td><td>覆寫 DB 存放目錄（一帳號只能用一個 canonical cache root）</td></tr>
+<tr><td><code>CBM_LOG_LEVEL</code></td><td>log 級別：debug/info/warn/error/none</td></tr>
+</table>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 的 supply chain 六層防護、為何沒有 telemetry 又該怎麼自己抓診斷資料、installer 的三個「絕不」、以及 <code>CBM_ALLOWED_ROOT</code> 何時該設。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

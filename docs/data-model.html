@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>圖資料模型 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>圖資料模型</h1>
+  <div class="subtitle">13 種節點 label、23 種邊型、qualified name</div>
+</header>
+
+<div class="guide">
+
+<h2>節點 Label</h2>
+<pre><code>Project · Package · Folder · File · Module · Class · Function · Method · Interface · Enum · Type · Route · Resource</code></pre>
+<table>
+<tr><th>Label</th><th>意義</th></tr>
+<tr><td><code>Project</code></td><td>一個被索引的 repo（含 repo_path、generation）</td></tr>
+<tr><td><code>Package</code> / <code>Module</code></td><td>套件/模組（套件解析自 package.json / go.mod / Cargo.toml…）</td></tr>
+<tr><td><code>Folder</code> / <code>File</code></td><td>目錄與檔案</td></tr>
+<tr><td><code>Class</code> / <code>Interface</code> / <code>Enum</code> / <code>Type</code></td><td>型別定義</td></tr>
+<tr><td><code>Function</code> / <code>Method</code></td><td>可呼叫物</td></tr>
+<tr><td><code>Route</code></td><td>REST 端點（HTTP method + path）</td></tr>
+<tr><td><code>Resource</code></td><td>IaC 資源（K8s kinds 等）</td></tr>
+</table>
+
+<h2>邊型</h2>
+<table>
+<tr><th>邊</th><th>意義</th></tr>
+<tr><td><code>CONTAINS_PACKAGE/FOLDER/FILE</code></td><td>容器關係</td></tr>
+<tr><td><code>DEFINES</code> / <code>DEFINES_METHOD</code></td><td>定義關係</td></tr>
+<tr><td><code>IMPORTS</code></td><td>匯入</td></tr>
+<tr><td><code>CALLS</code></td><td>呼叫（型別解析後的呼叫邊）</td></tr>
+<tr><td><code>CALL_REFERENCE</code></td><td>可呼叫值在支援的 reference site 使用、解析到單一目標</td></tr>
+<tr><td><code>USAGE</code></td><td>識別字被用，但無法證明唯一目標（含歧義/複雜運算式）</td></tr>
+<tr><td><code>HTTP_CALLS</code> / <code>ASYNC_CALLS</code></td><td>跨服務呼叫</td></tr>
+<tr><td><code>IMPLEMENTS</code> / <code>INHERITS</code></td><td>實作/繼承</td></tr>
+<tr><td><code>HANDLES</code></td><td>Route → handler 的對應</td></tr>
+<tr><td><code>EMITS</code> / <code>LISTENS_ON</code></td><td>channel（Socket.IO、EventEmitter、pub-sub）</td></tr>
+<tr><td><code>DATA_FLOWS</code></td><td>資料流（arg-to-param 對應 + field access chain）</td></tr>
+<tr><td><code>SIMILAR_TO</code></td><td>MinHash + LSH 近複製（Jaccard 計分）</td></tr>
+<tr><td><code>SEMANTICALLY_RELATED</code></td><td>詞彙不匹配、同語言、score ≥ 0.80 的語意關係</td></tr>
+<tr><td><code>CONFIGURES</code> / <code>WRITES</code> / <code>MEMBER_OF</code> / <code>TESTS</code> / <code>USES_TYPE</code> / <code>FILE_CHANGES_WITH</code></td><td>其餘語意邊</td></tr>
+</table>
+<div class="callout"><strong>為什麼要分 CALLS / CALL_REFERENCE / USAGE</strong>：這三種「看起來都是呼叫」的邊，代表不同程度的解析確定性。型別解析成功且唯一 → <code>CALLS</code>；可呼叫值引用但只是當參數傳遞 → <code>CALL_REFERENCE</code>；無法證明唯一目標 → <code>USAGE</code>。這是 CBM 比單純 grep 強的地方——它不硬猜。</div>
+
+<h2>Qualified Name</h2>
+<p><code>get_code_snippet</code> 用 qualified name 定位：</p>
+<pre><code>&lt;project&gt;.&lt;path_parts&gt;.&lt;name&gt;
+
+例如: myproj.src.services.order.process_order</code></pre>
+<p>先用 <code>search_graph</code> 發現確切名稱，再餵給 <code>get_code_snippet</code>。</p>
+
+<h2>查詢範例</h2>
+<p>資料模型 + Cypher 的威力（<a href="cypher.html">Cypher 全解</a>）：</p>
+<pre><code>// 死碼偵測：沒有被任何 CALLS 指向的函式
+MATCH (f:Function)
+WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() }
+RETURN f.name
+
+// main 呼叫了誰
+MATCH (f:Function)-[:CALLS]-&gt;(g)
+WHERE f.name = 'main'
+RETURN g.name</code></pre>
+
+<h2>跨 repo</h2>
+<p>多個 repo index 進同一個 store 時，會產生 <code>CROSS_*</code> 邊連結跨 repo 節點，3D UI 用 multi-galaxy 佈局呈現跨 repo 架構。詳見 <a href="multi-agent.html">Multi-Agent</a> 與 <a href="mcp-tools.html">get_architecture</a>。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：CALLS / CALL_REFERENCE / USAGE 的差異、Route 與 Resource 節點各代表什麼、qualified name 的格式、以及如何用 Cypher 的 <code>NOT EXISTS</code> 找死碼。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

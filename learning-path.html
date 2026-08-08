@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>學習路線 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="index.html">首頁</a>
+  <a href="map.html">概念地圖</a>
+  <a href="learning-path.html">學習路線</a>
+  <a href="install.html">安裝指南</a>
+  <a href="docs/index.html">文件教學</a>
+  <a href="docs/code/index.html">程式碼對照</a>
+  <a href="docs/worked.html">實作案例</a>
+  <a href="about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 回首頁</a></div>
+<header>
+  <h1>學習路線</h1>
+  <div class="subtitle">從「裝好」到「讀 C 源碼」的五層路線</div>
+</header>
+
+<div class="guide">
+
+<div class="level lv-emerald">
+  <div class="level-head"><span class="level-badge">L0</span><span class="level-title">裝好它</span><span class="level-sub">10 分鐘內讓 CBM 跑起來</span></div>
+  <div class="card-grid">
+    <a class="card" href="install.html"><span class="c-name">安裝</span><span class="c-zh">macOS/Linux 一行安裝、Windows PowerShell、--ui 圖形界面變體。</span></a>
+    <a class="card" href="docs/mcp-tools.html"><span class="c-name">15 個工具一覽</span><span class="c-zh">知道 index/query/read/ops 四類工具各做什麼。</span></a>
+  </div>
+</div>
+
+<div class="level lv-cyan">
+  <div class="level-head"><span class="level-badge">L1</span><span class="level-title">跑起來</span><span class="level-sub">對一個專案 index 並開始問結構問題</span></div>
+  <div class="card-grid">
+    <a class="card" href="docs/mcp-tools.html"><span class="c-name">index_repository</span><span class="c-zh">對你的專案建立知識圖譜，auto-sync 讓它保持新鮮。</span></a>
+    <a class="card" href="docs/mcp-tools.html"><span class="c-name">search_graph</span><span class="c-zh">用 name_pattern / label / degree 做結構搜尋。</span></a>
+    <a class="card" href="docs/mcp-tools.html"><span class="c-name">trace_path</span><span class="c-zh">追蹤誰呼叫誰，深度 1–5。</span></a>
+    <a class="card" href="docs/worked.html"><span class="c-name">實作案例</span><span class="c-zh">看真實 repo 的索引結果與查詢輸出。</span></a>
+  </div>
+</div>
+
+<div class="level lv-amber">
+  <div class="level-head"><span class="level-badge">L2</span><span class="level-title">讀懂圖</span><span class="level-sub">理解知識圖譜的結構與查詢語言</span></div>
+  <div class="card-grid">
+    <a class="card" href="docs/data-model.html"><span class="c-name">圖資料模型</span><span class="c-zh">13 種節點 label、23 種邊型、qualified name。</span></a>
+    <a class="card" href="docs/cypher.html"><span class="c-name">Cypher 子集</span><span class="c-zh">openCypher 唯讀子集：MATCH/WHERE/EXISTS、死碼查詢。</span></a>
+    <a class="card" href="docs/mcp-tools.html"><span class="c-name">detect_changes</span><span class="c-zh">把 git diff 映射到受影響符號 + blast radius。</span></a>
+    <a class="card" href="docs/graph-artifact.html"><span class="c-name">graph.db.zst</span><span class="c-zh">團隊共享的壓縮圖快照，隊友 clone 免重 index。</span></a>
+  </div>
+</div>
+
+<div class="level lv-fuchsia">
+  <div class="level-head"><span class="level-badge">L3</span><span class="level-title">讀原理</span><span class="level-sub">理解索引管線與效能/安全設計</span></div>
+  <div class="card-grid">
+    <a class="card" href="docs/how-it-works.html"><span class="c-name">運作原理</span><span class="c-zh">無內建 LLM 的哲學、兩層解析（tree-sitter + Hybrid LSP）、RAM-first pipeline。</span></a>
+    <a class="card" href="docs/architecture.html"><span class="c-name">架構總覽</span><span class="c-zh">15 個 src/ 模組職責、索引 pass 順序。</span></a>
+    <a class="card" href="docs/performance.html"><span class="c-name">效能基準</span><span class="c-zh">Linux kernel 3min、Cypher &lt;1ms、token 省 99.2%。</span></a>
+    <a class="card" href="docs/security.html"><span class="c-name">安全模型</span><span class="c-zh">SLSA3/cosign/VirusTotal/CodeQL、零依賴、無 telemetry。</span></a>
+    <a class="card" href="docs/daemon.html"><span class="c-name">Daemon</span><span class="c-zh">一帳號一協調 daemon、admission barrier、CLI 分離。</span></a>
+    <a class="card" href="docs/config.html"><span class="c-name">設定</span><span class="c-zh">config 指令、CBM_* 環境變數、.cbmignore、extra_extensions。</span></a>
+  </div>
+</div>
+
+<div class="level lv-violet">
+  <div class="level-head"><span class="level-badge">L4</span><span class="level-title">讀 C 源碼</span><span class="level-sub">直接進 13 萬行純 C 的逐函數講解</span></div>
+  <div class="card-grid">
+    <a class="card" href="docs/code/mcp.html"><span class="c-name">mcp/mcp.c</span><span class="c-zh">15 工具註冊、JSON-RPC 2.0、session detection。</span></a>
+    <a class="card" href="docs/code/store.html"><span class="c-name">store/store.c</span><span class="c-zh">SQLite 圖儲存、遍歷、Louvain。</span></a>
+    <a class="card" href="docs/code/cypher.html"><span class="c-name">cypher/cypher.c</span><span class="c-zh">Cypher lexer→parser→planner→executor。</span></a>
+    <a class="card" href="docs/code/main.html"><span class="c-name">main.c</span><span class="c-zh">單一二進位入口的分派。</span></a>
+    <a class="card" href="docs/code/cli.html"><span class="c-name">cli/cli.c</span><span class="c-zh">install/update/config、43 個 client surface。</span></a>
+    <a class="card" href="docs/code/index.html"><span class="c-name">全部程式碼對照</span><span class="c-zh">13 頁逐函數講解。</span></a>
+  </div>
+</div>
+
+<div class="callout"><strong>看完這條路線你應該能</strong>：獨立安裝並使用 CBM 讀懂任何專案、寫出 Cypher 死碼查詢、解釋 Hybrid LSP 為何比純 tree-sitter 強、並能追著 mcp.c 的註冊流程看 source。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

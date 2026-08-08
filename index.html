@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>codebase-memory-mcp 繁中教學站 · codebase-memory-mcp-zh-tw</title>
+<meta name="description" content="codebase-memory-mcp（MIT）的非官方繁體中文教學站——程式碼對照、文件講解、MCP 工具解析與實作案例。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="index.html">首頁</a>
+  <a href="map.html">概念地圖</a>
+  <a href="learning-path.html">學習路線</a>
+  <a href="install.html">安裝指南</a>
+  <a href="docs/index.html">文件教學</a>
+  <a href="docs/code/index.html">程式碼對照</a>
+  <a href="docs/worked.html">實作案例</a>
+  <a href="about.html">關於</a>
+</nav>
+<header>
+  <h1>codebase-memory-mcp 繁體中文教學站</h1>
+  <div class="subtitle">把整個 repo（程式碼 · 文件 · MCP 工具 · 測試 · 案例）做成中英對照的解說</div>
+  <div class="tagline">
+    <strong>codebase-memory-mcp（CBM）</strong> 是一個用<strong>純 C</strong> 寫的 MCP server：
+    用 tree-sitter 把整個專案在毫秒級解析成<strong>持久化的知識圖譜</strong>（函式、類別、呼叫鏈、
+    HTTP 路由、跨服務連結），並提供 <strong>15 個 MCP 工具</strong>——用「問結構問題」
+    取代「一個檔案一個檔案地 grep」，查詢比檔案式探索省 <strong>99.2%</strong> token。
+  </div>
+  <div class="badge-line">對齊上游 <code>main @ 2c50c77</code> · 發行版 <code>v0.9.0</code> · MIT 授權 · 158 語言 · 43 agent 平台</div>
+</header>
+
+<div class="entry-cards">
+  <a class="entry-card" href="map.html">
+    <span class="ec-icon">🕸️</span>
+    <span class="ec-title">概念地圖</span>
+    <span class="ec-en">Concept Map</span>
+    <span class="ec-desc">節點、邊、Cypher、15 個 MCP 工具、Hybrid LSP、社群偵測——一張圖看懂 CBM 的所有核心概念。</span>
+  </a>
+  <a class="entry-card" href="learning-path.html">
+    <span class="ec-icon">🧗</span>
+    <span class="ec-title">學習路線</span>
+    <span class="ec-en">Learning Path</span>
+    <span class="ec-desc">從安裝到讀 C 源碼的分層路線：L0 裝好、L1 跑起來、L2 讀圖、L3 讀原理、L4 讀源碼。</span>
+  </a>
+  <a class="entry-card" href="install.html">
+    <span class="ec-icon">📦</span>
+    <span class="ec-title">安裝指南</span>
+    <span class="ec-en">Install Guide</span>
+    <span class="ec-desc">macOS / Linux / Windows 三指令、--ui 圖形界面、npm/PyPI/brew/AUR、build from source、43 平台摘要。</span>
+  </a>
+  <a class="entry-card" href="docs/index.html">
+    <span class="ec-icon">📚</span>
+    <span class="ec-title">文件教學</span>
+    <span class="ec-en">Documentation</span>
+    <span class="ec-desc">翻譯並解說官方文件：運作原理、架構、圖資料模型、15 工具、Cypher、效能、安全模型。</span>
+  </a>
+  <a class="entry-card" href="docs/code/index.html">
+    <span class="ec-icon">🧩</span>
+    <span class="ec-title">程式碼對照</span>
+    <span class="ec-en">Code Walkthrough</span>
+    <span class="ec-desc">純 C 源碼（13 萬行）逐函數講解：mcp.c、store.c、cypher.c、cli.c、pipeline、daemon——每個函數一個收縮塊。</span>
+  </a>
+  <a class="entry-card" href="docs/worked.html">
+    <span class="ec-icon">🎮</span>
+    <span class="ec-en">Worked Examples</span>
+    <span class="ec-title">實作案例</span>
+    <span class="ec-desc">用 graphify 掃描 CBM 自己做出的互動知識圖譜，加上 Cypher 死碼實戰等真實案例。</span>
+  </a>
+</div>
+
+<div class="sync-panel"><h2>上游同步 · 版本釘選</h2><div class="sync-meta">對齊上游 <code>DeusData/codebase-memory-mcp</code> 分支 <code>main</code>（<code>2c50c77</code>）<span class="sync-badge ok">已釘選</span></div><p class="sync-empty">上游為 MIT 授權，本站內容逐月檢查並更新對齊版本。</p></div>
+
+<div class="embed-panel">
+  <div class="embed-head"><span class="embed-title">專案資料</span><span class="repo-status">來源：DeusData/codebase-memory-mcp（MIT）</span></div>
+  <div class="repo-readme">
+    <ul>
+      <li><strong>官方 repo</strong>：<a href="https://github.com/DeusData/codebase-memory-mcp">github.com/DeusData/codebase-memory-mcp</a>（main，授權 MIT）</li>
+      <li><strong>語言</strong>：純 C，13 萬行；158 種語言經 vendored tree-sitter grammars 解析</li>
+      <li><strong>Hybrid LSP</strong>：Python / TS / PHP / C# / Go / C/C++ / Java / Kotlin / Rust / Perl 型別解析</li>
+      <li><strong>效能</strong>：Linux kernel（28M LOC）全索引 3 分鐘、Cypher 查詢 &lt;1ms、token 省 99.2%</li>
+      <li><strong>散布</strong>：單一靜態二進位（macOS/Linux/Windows），零依賴，也可 npm/PyPI/Homebrew/AUR</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站——中文解說為本站撰寫，英文原文與程式碼保留上游原貌。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關，為第三方社群教學站 · 由 OpenCode 建置</div>
+  <div class="footer-license">授權檔案：<a href="LICENSE">MIT LICENSE</a>（照抄自上游）· <a href="NOTICE">NOTICE</a></div>
+</footer>
+</div>
+</body>
+</html>

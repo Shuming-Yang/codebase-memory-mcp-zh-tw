@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>安裝指南 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="index.html">首頁</a>
+  <a href="map.html">概念地圖</a>
+  <a href="learning-path.html">學習路線</a>
+  <a href="install.html">安裝指南</a>
+  <a href="docs/index.html">文件教學</a>
+  <a href="docs/code/index.html">程式碼對照</a>
+  <a href="docs/worked.html">實作案例</a>
+  <a href="about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 回首頁</a></div>
+<header>
+  <h1>安裝指南</h1>
+  <div class="subtitle">讓 codebase-memory-mcp 在你用的 AI 助手上跑起來</div>
+</header>
+
+<div class="guide">
+<div class="callout warn"><strong>先記住這件事</strong>：CBM 是<strong>單一靜態二進位</strong>，零依賴、零 API key。裝完重啟你的 coding agent，然後說「Index this project」就開始用了。更新是重跑 <code>install.sh</code>（idempotent），不是從二進位內部更新。</div>
+
+<h2>Step 1 — 安裝（macOS / Linux）</h2>
+<pre><code># 標準版（無圖形界面，精簡）
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash
+
+# 含 3D 圖形 UI（localhost:9749）
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash -s -- --ui</code></pre>
+
+<h2>Step 1' — Windows（PowerShell）</h2>
+<pre><code># 1. 下載安裝程式
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -OutFile install.ps1
+
+# 2. （建議）檢視指令碼內容
+notepad install.ps1
+
+# 3. 解除 Mark-of-the-Web 限制
+Unblock-File .\install.ps1
+
+# 4. 執行
+.\install.ps1</code></pre>
+<p class="hint">若出現執行原則錯誤：先跑 <code>Set-ExecutionPolicy -Scope Process Bypass</code>，或 <code>PowerShell -ExecutionPolicy Bypass -File .\install.ps1</code>。SmartScreen 警告 →「更多資訊」→「仍要執行」。</p>
+
+<h2>Step 2 — 確認安裝</h2>
+<pre><code>codebase-memory-mcp --version        # 例如 0.9.0
+codebase-memory-mcp cli list_projects  # 空的 [] 也正常</code></pre>
+
+<h2>Step 3 — 開始使用</h2>
+<p><code>install</code> 會自動偵測已安裝的 coding agent（Claude Code / Codex / OpenCode / Cursor / Gemini CLI…共 43 個平台）並寫入 MCP 設定。重啟你的 agent，然後：</p>
+<pre><code>你：幫我 index 這個專案
+（agent 呼叫 index_repository(repo_path="/絕對路徑")）
+
+你：誰呼叫了 ProcessOrder？
+（agent 呼叫 trace_path(function_name="ProcessOrder", direction="inbound")）</code></pre>
+
+<h2>安裝選項</h2>
+<table>
+<tr><th>旗標</th><th>說明</th></tr>
+<tr><td><code>--ui</code></td><td>安裝含 3D 圖形界面（<code>codebase-memory-mcp --ui=true --port=9749</code> → 開 <code>http://localhost:9749</code>）</td></tr>
+<tr><td><code>--skip-config</code></td><td>只要二進位，不設定任何 agent</td></tr>
+<tr><td><code>--dir=&lt;path&gt;</code></td><td>指定安裝位置</td></tr>
+</table>
+
+<h2>套件管理器</h2>
+<pre><code># npm
+npm install -g codebase-memory-mcp          # 含 UI：CBM_VARIANT=ui npm install -g codebase-memory-mcp
+
+# PyPI
+pip install codebase-memory-mcp             # 含 UI：CBM_VARIANT=ui pip install codebase-memory-mcp
+
+# Homebrew（macOS）
+brew install codebase-memory-mcp
+
+# Arch Linux
+yay -S codebase-memory-mcp-bin
+
+# 其他
+scoop install codebase-memory-mcp   # Windows
+winget install codebase-memory-mcp  # Windows
+choco install codebase-memory-mcp   # Windows
+go install github.com/DeusData/codebase-memory-mcp@latest</code></pre>
+<div class="callout info"><strong>注意</strong>：npm/PyPI/Go 套件只是「發佈該套件的私有快取二進位」，不會取代 native 安裝；執行時仍會進入 exact-build admission barrier。套件管理器的更新用你的套件管理器（<code>npm i -g codebase-memory-mcp@latest</code> / <code>pip install -U codebase-memory-mcp</code>）。</div>
+
+<h2>從原始碼建置</h2>
+<pre><code>git clone https://github.com/DeusData/codebase-memory-mcp.git
+cd codebase-memory-mcp
+scripts/build.sh                # 標準版
+scripts/build.sh --with-ui      # 含圖形界面
+# 二進位在 build/c/codebase-memory-mcp</code></pre>
+<p class="hint">需求：C 編譯器（gcc/clang）、C++ 編譯器、zlib、git。跑測試：<code>scripts/test.sh</code>（6,768 tests / 120 suites）。</p>
+
+<h2>手動 MCP 設定（不想用 install 指令）</h2>
+<p>加到 <code>~/.claude.json</code>（或專案 <code>.mcp.json</code>）：</p>
+<pre><code>{
+  "mcpServers": {
+    "codebase-memory-mcp": {
+      "command": "/path/to/codebase-memory-mcp",
+      "args": []
+    }
+  }
+}</code></pre>
+
+<h2>更新與移除</h2>
+<pre><code># 更新：重跑安裝指令碼（idempotent）就是更新
+bash "&lt;install-dir&gt;/install.sh"        # macOS/Linux
+powershell -File "&lt;install-dir&gt;\install.ps1"   # Windows
+
+# 移除
+codebase-memory-mcp uninstall</code></pre>
+<p>CBM 不會自行檢查新版本、不會發送任何網路請求。更新一律透過 install 指令碼 / 套件管理器 / GitHub releases。</p>
+
+<h2>疑難排解</h2>
+<table class="platform-table">
+<tr><th>問題</th><th>解決方式</th></tr>
+<tr><td><code>/mcp</code> 看不到 server</td><td>確認 <code>.mcp.json</code> 路徑是絕對路徑，重啟 agent。測試：<code>echo '{}' | /path/to/binary</code> 應輸出 JSON</td></tr>
+<tr><td><code>index_repository</code> 失敗</td><td>傳絕對路徑：<code>index_repository(repo_path="/absolute/path")</code></td></tr>
+<tr><td><code>trace_path</code> 回 0 筆</td><td>先 <code>search_graph(name_pattern=".*PartialName.*")</code> 找出精確名稱</td></tr>
+<tr><td>查詢到錯的專案</td><td>加 <code>project="name"</code> 參數；用 <code>list_projects</code> 看名稱</td></tr>
+<tr><td>找不到二進位</td><td><code>export PATH="$HOME/.local/bin:$PATH"</code></td></tr>
+<tr><td>UI 沒載入</td><td>確認下載的是 <code>ui</code> 變體且跑了 <code>--ui=true</code>，檢查 <code>http://localhost:9749</code></td></tr>
+</table>
+
+<p class="hint">完整平台矩陣（43 agent）見 <a href="docs/multi-agent.html">Multi-Agent 支援</a>。</p>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

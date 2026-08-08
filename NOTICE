@@ -1,0 +1,35 @@
+# NOTICE
+
+## codebase-memory-mcp-zh-tw — 非官方繁體中文教學站
+
+This repository is a **third-party, unofficial Traditional Chinese teaching site**
+for [DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp).
+
+Upstream project: `codebase-memory-mcp`
+Copyright (c) 2025 DeusData
+License: MIT (see `LICENSE`, copied verbatim from upstream)
+
+本站為第三方社群教學站，**與 DeusData 無關**，不代表 DeusData 官方立場。
+
+## What is copied from upstream
+
+- `LICENSE` — MIT 全文，照抄自上游 `DeusData/codebase-memory-mcp`（`Copyright (c) 2025 DeusData`）。
+- 網站中所有引用的上游原始碼片段、文件摘錄、官方 docs 資產（如截圖）均保留上游出處標註。
+- 程式碼片段屬 MIT「substantial portions」，依 MIT 要求保留版權與許可聲明。
+
+## What is original to this repository
+
+- 本站的中文解說、教學文章、網站排版（HTML/CSS/JS）為本站原創內容，
+  同樣以 **MIT License** 釋出（見 `LICENSE`）。
+
+## Graphify 產出（worked/cbm-source/）
+
+- `worked/cbm-source/` 內的互動知識圖譜（`graph.html` / `graph-zh.html`）與
+  `GRAPH_REPORT.md` 由 [graphify](https://github.com/Graphify-Labs/graphify)（Apache-2.0）
+  對上游 `codebase-memory-mcp` 的 `src/` + `tests/`（對齊 commit `2c50c77`）掃描產生，
+  屬衍生呈現，非上游產品本身。
+
+## 商標
+
+codebase-memory-mcp 與 DeusData 為其各自權利人所有。本站僅在「描述性／教學」語境
+使用該名稱，未經背書，亦不主張任何商標權。

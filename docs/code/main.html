@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · main.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>main.c — 單一二進位入口</h1>
+  <div class="subtitle">一個二進位，MCP server / CLI / install / update / config 全包</div>
+  <div class="badge-line">檔案：<code>src/main.c</code>（2,418 行）</div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>main.c</code> 是整個二進位的入口。它根據第一個參數決定進入哪個模式：無參數 → MCP stdio server；<code>cli</code> → 單次指令；<code>install/update/uninstall/config</code> → 安裝與設定子指令。設計哲學是<strong>單一靜態二進位</strong>：不另外帶 companion executable。</p>
+
+<hr>
+
+<h2>1. 模式分派</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">main()</span> <span class="fn-tag">main.c</span><span class="fn-one-liner">依 argv[1] 決定 MCP / CLI / install 模式。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>開頭先做基礎初始化（記憶體、log、平台抽象），然後分派：</p>
+<ul>
+<li>無參數或 <code>stdio</code> → MCP server（<code>mcp/mcp.c</code>）</li>
+<li><code>cli</code> → 單次 CLI 指令（不啟動 daemon）</li>
+<li><code>install</code> / <code>update</code> / <code>uninstall</code> / <code>config</code> → <code>cli/cli.c</code></li>
+<li><code>--ui=true</code> → 啟動 3D UI（<code>ui/</code>）</li>
+</ul>
+</div>
+</div>
+</details>
+
+<h2>2. 與 daemon 的關係</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">MCP 模式的 daemon 連線</span> <span class="fn-tag">main.c</span><span class="fn-one-liner">MCP 模式啟動或連上 per-account daemon。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>MCP 模式不是自己包辦一切：它透過 daemon（<code>daemon/</code>）共享 watcher、索引 job、UI。第一個 daemon-backed session 啟動 daemon，最後一個 session 關閉它。<strong>CLI 模式刻意分離</strong>——單次指令不啟動 daemon、不留常駐 process。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 維持 stdout 乾淨</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">log 路由</span> <span class="fn-tag">main.c</span><span class="fn-one-liner">日誌走 stderr / daemon log，stdout 只留 MCP JSON-RPC。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>MCP 是 stdio 協議：stdout 只能有 JSON-RPC，混入任何日誌都會讓 client 解析失敗。所以日誌被導到 stderr（session 層）或 <code>${CBM_CACHE_DIR}/logs/cbm-daemon.log</code>（daemon 層）。<code>--progress</code> 只寫 stderr，讓 pipe/script 保持機器可讀。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：單一二進位的分派邏輯、MCP 模式如何跟 daemon 合作共享資源、CLI 模式為何刻意不啟動 daemon、以及 stdout 乾淨對 MCP 協議的重要性。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

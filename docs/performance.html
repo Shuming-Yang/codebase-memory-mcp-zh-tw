@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>效能基準 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>效能基準</h1>
+  <div class="subtitle">Linux kernel 3 分鐘、Cypher &lt;1ms、token 省 99.2%</div>
+</header>
+
+<div class="guide">
+
+<div class="callout warn"><strong>出處聲明</strong>：以下數字為上游官方 benchmark（Apple M3 Pro、docs/BENCHMARK.md），本站未在同等硬體重測——列出來是讓你知道這工具「能多快」，不是本站實測。</div>
+
+<h2>索引速度</h2>
+<table>
+<tr><th>專案</th><th>耗時</th><th>規模</th></tr>
+<tr><td><strong>Linux kernel</strong>（full index）</td><td><strong>3 分鐘</strong></td><td>28M LOC、75K 檔 → 4.81M 節點 / 7.72M 邊</td></tr>
+<tr><td>Linux kernel（fast index）</td><td>1m 12s</td><td>1.88M 節點</td></tr>
+<tr><td>Django</td><td>~6 秒</td><td>49K 節點 / 196K 邊</td></tr>
+</table>
+
+<h2>查詢延遲</h2>
+<table>
+<tr><th>操作</th><th>時間</th><th>說明</th></tr>
+<tr><td>Cypher query</td><td><strong>&lt;1ms</strong></td><td>relationship traversal</td></tr>
+<tr><td>名稱搜尋（regex）</td><td>&lt;10ms</td><td>SQL LIKE 預過濾</td></tr>
+<tr><td>死碼偵測</td><td>~150ms</td><td>全圖掃描 + degree 過濾</td></tr>
+<tr><td>Trace 呼叫路徑（depth=5）</td><td>&lt;10ms</td><td>BFS 遍歷</td></tr>
+</table>
+
+<h2>為什麼快</h2>
+<ul>
+<li><strong>RAM-first pipeline</strong>：所有索引在記憶體跑（LZ4 HC 壓縮讀入、in-memory SQLite、結束才單次 dump）。</li>
+<li><strong>平行 worker</strong>：<code>pass_parallel.c</code> 的 worker pool 用滿 CPU。</li>
+<li><strong>記憶體用完即釋放</strong>：索引完回歸 OS，不常駐。</li>
+<li><strong>增量更新</strong>：之後只處理變更，不是每次全跑。</li>
+</ul>
+
+<h2>Token 效率</h2>
+<p>官方 benchmark：<strong>5 個結構查詢約 3,400 token</strong>，而逐檔 grep 探索同一批問題約需 <strong>412,000 token</strong>——<strong>減少 99.2%</strong>。</p>
+<pre><code>file-by-file grep:  ~412,000 tokens
+codebase-memory-mcp: ~3,400  tokens
+省下:                99.2%</code></pre>
+<p>圖查詢取代幾十次 grep/read 循環：agent 不用把整個檔案塞進 context 才能找到答案。</p>
+
+<h2>可設定的資源參數</h2>
+<table>
+<tr><th>變數</th><th>說明</th></tr>
+<tr><td><code>CBM_WORKERS</code></td><td>覆寫平行索引 worker 數（容器內 cgroup 配額誤判時用）</td></tr>
+<tr><td><code>CBM_MEM_BUDGET_MB</code></td><td>顯式設定記憶體預算上限</td></tr>
+</table>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 能在 3 分鐘內索引 kernel 的關鍵（RAM-first + 平行 + 增量）、Cypher &lt;1ms 與 trace &lt;10ms 的數量級、以及「圖查詢取代 grep」為何省下 99.2% token。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

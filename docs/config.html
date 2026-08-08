@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>設定 · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>設定</h1>
+  <div class="subtitle">config 指令、CBM_* 環境變數、.cbmignore、extra_extensions</div>
+</header>
+
+<div class="guide">
+
+<h2>config 子指令</h2>
+<pre><code>codebase-memory-mcp config list                          # 顯示所有設定
+codebase-memory-mcp config set auto_index true           # session 開始時自動索引
+codebase-memory-mcp config set auto_index_limit 50000    # 自動索引的檔案上限
+codebase-memory-mcp config set auto_watch false          # 不註冊背景 git watcher（預設 true）
+codebase-memory-mcp config reset auto_index              # 重置為預設</code></pre>
+<p>設定存在 <code>${CBM_CACHE_DIR}/_config.db</code>（SQLite）。</p>
+
+<h2>環境變數</h2>
+<table>
+<tr><th>變數</th><th>預設</th><th>說明</th></tr>
+<tr><td><code>CBM_ALLOWED_ROOT</code></td><td>未設</td><td>把 <code>index_repository</code> 限制在此目錄內（多租戶/未信任呼叫者用）</td></tr>
+<tr><td><code>CBM_CACHE_DIR</code></td><td><code>~/.cache/codebase-memory-mcp</code></td><td>DB 存放目錄（一帳號一個 canonical root）</td></tr>
+<tr><td><code>CBM_DIAGNOSTICS</code></td><td>false</td><td>啟用 daemon 的 <code>snapshot.json</code> 與 <code>trajectory.ndjson</code> 診斷</td></tr>
+<tr><td><code>CBM_DOWNLOAD_URL</code></td><td>GitHub releases</td><td>覆寫更新下載來源（測試/自架用）</td></tr>
+<tr><td><code>CBM_LOG_LEVEL</code></td><td>info</td><td>log 級別：debug/info/warn/error/none</td></tr>
+<tr><td><code>CBM_WORKERS</code></td><td>自動偵測</td><td>平行索引 worker 數（容器內 cgroup 誤判時用）</td></tr>
+<tr><td><code>CBM_MEM_BUDGET_MB</code></td><td>自動偵測</td><td>記憶體預算上限（MiB）</td></tr>
+<tr><td><code>CBM_DUMP_VERIFY_MIN_RATIO</code></td><td>0.5</td><td>索引後驗證：持久化節點數低於門檻回 <code>degraded</code></td></tr>
+</table>
+<p class="hint">daemon 擁有的組件（diagnostics、daemon log、索引資源限制）在「第一個啟動 daemon 的 session」時捕捉設定——要改得關掉所有 daemon-backed session。</p>
+
+<h2>忽略檔案：.cbmignore</h2>
+<p>忽略是<strong>分層</strong>的：硬編碼模式（<code>.git</code>、<code>node_modules</code>…）→ <code>.gitignore</code> 階層 → <code>.cbmignore</code>（專案專用，gitignore 語法）。symlink 永遠跳過。</p>
+<pre><code># .cbmignore 範例（gitignore 語法，支援 ! 反轉）
+build/
+dist/
+*.min.js
+!important.min.js</code></pre>
+<p class="hint">完整語法與優先權見上游 <a href="https://github.com/DeusData/codebase-memory-mcp/blob/main/docs/cbmignore.md">docs/cbmignore.md</a>。</p>
+
+<h2>自訂副檔名：extra_extensions</h2>
+<p>把額外副檔名映射到支援的語言（框架專用副檔名如 <code>.blade.php</code>、<code>.mjs</code>）：</p>
+<pre><code>// 專案內 .codebase-memory.json
+{"extra_extensions": {".blade.php": "php", ".mjs": "javascript"}}
+
+// 全域 ~/.config/codebase-memory-mcp/config.json
+{"extra_extensions": {".twig": "html", ".phtml": "php"}}</code></pre>
+<p>專案設定覆寫全域。副檔名必須以 <code>.</code> 開頭、語言名不區分大小寫；未知語言會被略過並警告。</p>
+
+<h2>持久化</h2>
+<p>SQLite DB 在 <code>~/.cache/codebase-memory-mcp/</code>，跨重啟持久（WAL、ACID-safe）。重置：<code>rm -rf ~/.cache/codebase-memory-mcp/</code>。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：config 指令語法與存放位置、auto_index/auto_watch 的差別、CBM_ALLOWED_ROOT 與 CBM_CACHE_DIR 何時用、忽略分層（硬編碼→gitignore→cbmignore）、以及如何把 .blade.php 映射到 PHP。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

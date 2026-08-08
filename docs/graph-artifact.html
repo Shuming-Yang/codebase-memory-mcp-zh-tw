@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>Graph Artifact · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../index.html">首頁</a>
+  <a href="../map.html">概念地圖</a>
+  <a href="../learning-path.html">學習路線</a>
+  <a href="../install.html">安裝指南</a>
+  <a href="index.html">文件教學</a>
+  <a href="code/index.html">程式碼對照</a>
+  <a href="worked.html">實作案例</a>
+  <a href="../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 文件教學</a></div>
+<header>
+  <h1>Team-Shared Graph Artifact</h1>
+  <div class="subtitle">commit 一個壓縮檔，隊友 clone 免重 index</div>
+</header>
+
+<div class="guide">
+
+<h2>一句話</h2>
+<p>把單一壓縮檔 commit 進你的 repo，隊友 clone 下來第一次跑 CBM 就直接載入圖，不必重跑完整索引。</p>
+
+<h2>它是什麼</h2>
+<p><code>.codebase-memory/graph.db.zst</code> 是知識圖譜的 <strong>zstd 壓縮快照</strong>（SQLite DB、index 剝離、<code>VACUUM INTO</code> 壓實、zstd 壓縮，典型 8–13:1）。住在你 source 旁邊：</p>
+<ul>
+<li>你 index 時，artifact 被寫出或更新。</li>
+<li>隊友 clone 後第一次跑 CBM，artifact 被解壓 + 增量索引補上 local diff。</li>
+</ul>
+
+<h2>兩種 tier</h2>
+<table>
+<tr><th>Tier</th><th>做法</th><th>何時</th></tr>
+<tr><td><strong>Best</strong></td><td><code>zstd -9</code> + index 剝離 + <code>VACUUM INTO</code></td><td>明確呼叫 <code>index_repository</code> 時</td></tr>
+<tr><td><strong>Fast</strong></td><td><code>zstd -3</code></td><td>watcher 做低延遲增量更新時</td></tr>
+</table>
+
+<h2>Bootstrap</h2>
+<p>本機沒有 DB 但 artifact 存在時，<code>index_repository</code> 先匯入 artifact，再跑增量索引——省掉完整重索引的成本。</p>
+
+<h2>無 merge 痛</h2>
+<p>首次 export 時自動建立 <code>.gitattributes</code> 的 <code>merge=ours</code>，並行編輯不會在二進位 artifact 上產生衝突。</p>
+
+<h2>可選</h2>
+<p>不 commit 也行：把 <code>.codebase-memory/</code> 加進 <code>.gitignore</code> 就大家都重新索引。結果在精神上類似 graphify 的 <code>graphify-out/</code>，但是單一壓縮檔 + 明確兩層 export + 完整性檢查 + 零 merge 摩擦。</p>
+
+<div class="callout info"><strong>看完這頁你應該能說出</strong>：graph.db.zst 是什麼、Best/Fast 兩 tier 何時用、bootstrap 如何省掉重索引、merge=ours 為什麼讓二進位不衝突、以及不想共享時怎麼關。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

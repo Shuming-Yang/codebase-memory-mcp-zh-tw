@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · cli/cli.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>cli/cli.c — 安裝與設定層</h1>
+  <div class="subtitle">install/uninstall/update/config、43 個 client surface、hook 安裝</div>
+  <div class="badge-line">檔案：<code>src/cli/cli.c</code>（11,928 行）· <code>cli.h</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>cli.c</code> 是「安裝體驗」的所在。它做的事包括：<code>install</code>（下載/驗證/啟動）、<code>uninstall</code>、<code>update</code>（印出重跑 install.sh 的指令）、<code>config</code>（設定讀寫）、以及<strong>把 CBM 設定進 43 個 coding agent</strong>（Claude Code、Codex、OpenCode、Cursor、Gemini CLI…）。</p>
+
+<hr>
+
+<h2>1. 安裝 / 更新 / 移除</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_cmd_install / cbm_cmd_update / cbm_cmd_uninstall</span> <span class="fn-tag">cli.c</span><span class="fn-one-liner">安裝生命週期的三個子指令。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><strong>更新刻意不做「in-process updater」</strong>——因為那結構上是「下載 + 解壓 + 標記執行 + 執行」，正是防毒軟體最警戒的 dropper 行為。所以 <code>update</code> 只驗證旗標、印出「重跑 install.sh」的指令，由外部指令碼完成實際替換（<code>install.sh</code> 是 idempotent，重跑就是更新）。</p>
+<div class="anno-para"><strong>教學重點</strong>：安全設計 > 便利——這個決定換掉了「內建自動更新」換來「二進位裡沒有下載器特徵」。Windows 上更是硬性需求（執行中的 exe 無法自我替換）。</div>
+</div>
+</div>
+</details>
+
+<h2>2. 43 個 agent 平台</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">agent 設定安裝</span> <span class="fn-tag">cli.c</span><span class="fn-one-liner">偵測已裝的 agent，寫入 MCP 設定 + 指令/skill/hook。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>37 個自動偵測 + 6 個 conditional/explicit（有已存在的 config 路徑才寫）。每個平台寫入：MCP config、durable context（<code>AGENTS.md</code> / <code>GEMINI.md</code> 等）、skill、以及對應的 hooks。設計原則是<strong>絕不亂開實驗性 flag、不啟用 plugin、不信任第三方指令</strong>。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 三層 agent profile</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">Scout / Verify / Auditor</span> <span class="fn-tag">cli.c</span><span class="fn-one-liner">為支援自訂 agent 的平台建立三個圖查詢 agent。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>從一份 canonical contract 產生三層定義：</p>
+<ul>
+<li><strong>Scout（Tier 1）</strong>：3–4 個窄呼叫，快速試探性發現，不做 absence/impact/dead-code 聲稱。</li>
+<li><strong>Verify（Tier 2，預設）</strong>：任務導向的圖證據 + 精確原始碼檢查 + 引用路徑涵蓋。</li>
+<li><strong>Auditor（Tier 3）</strong>：受限範圍、完整分頁、更廣的關係檢查、明確的未解限制。</li>
+</ul>
+<p>每層都批次呼叫 <code>check_index_coverage</code> 檢查證據路徑——clean 只代表「沒有記錄缺口」。</p>
+</div>
+</div>
+</details>
+
+<h2>4. config 子指令</h2>
+
+<details class="fn-block">
+<summary><span class="fn-name">config set/get/list/reset</span> <span class="fn-tag">cli.c</span><span class="fn-one-liner">讀寫 runtime 設定（auto_index、auto_watch、auto_index_limit…）。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>設定存在 <code>${CBM_CACHE_DIR}/_config.db</code>（SQLite）。例：<code>config set auto_index true</code> 讓新專案首次連線自動索引；<code>auto_watch false</code> 關掉背景 watcher 註冊。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：為什麼 CBM 不用 in-process updater、43 個平台是「偵測 + conditional」而非全寫、Scout/Verify/Auditor 三層的職責差異、以及 config 存哪、auto_index 是做什麼。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>

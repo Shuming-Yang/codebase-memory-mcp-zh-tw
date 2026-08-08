@@ -1,0 +1,10 @@
+# temp / local
+.DS_Store
+*.local
+
+# graphify intermediate
+graphify-out/
+cache/
+
+# OS
+Thumbs.db

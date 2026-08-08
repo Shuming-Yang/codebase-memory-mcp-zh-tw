@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<title>程式碼對照 · store/store.c · codebase-memory-mcp 繁中教學站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<div class="container">
+<nav class="topnav">
+  <a href="../../index.html">首頁</a>
+  <a href="../../map.html">概念地圖</a>
+  <a href="../../learning-path.html">學習路線</a>
+  <a href="../../install.html">安裝指南</a>
+  <a href="../index.html">文件教學</a>
+  <a href="index.html">程式碼對照</a>
+  <a href="../worked.html">實作案例</a>
+  <a href="../../about.html">關於</a>
+</nav>
+<div class="back-link"><a href="index.html">← 程式碼對照</a></div>
+<header>
+  <h1>store/store.c — SQLite 圖儲存</h1>
+  <div class="subtitle">節點/邊、遍歷、搜尋、Louvain 社群</div>
+  <div class="badge-line">檔案：<code>src/store/store.c</code>（8,427 行）· <code>store.h</code></div>
+</header>
+
+<div class="guide">
+
+<h2>大方向</h2>
+<p><code>store.c</code> 是所有圖資料的家。它把知識圖譜持久化到 SQLite（WAL 模式、ACID），提供節點/邊的 CRUD、BFS 遍歷（<code>trace_path</code> 的底層）、BM25 全文搜尋、Louvain 社群偵測、以及 Cypher 引擎讀取的資料介面。</p>
+
+<hr>
+
+<h2>1. 儲存模型</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_store_t</span> <span class="fn-tag">store.h</span><span class="fn-one-liner">store 結構：SQLite connection + 節點/邊的 schema。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>store 封裝一條 SQLite connection。節點表、邊表、屬性表用 SQL 正規化儲存；搜尋用 SQLite FTS5 + 自訂 <code>cbm_camel_split</code> tokenizer（認得 camelCase / snake_case）。</p>
+</div>
+</div>
+</details>
+
+<h2>2. 節點/邊操作</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">cbm_store_add_node / cbm_store_add_edge / cbm_store_find_nodes_by_label</span> <span class="fn-tag">store.c</span><span class="fn-one-liner">圖的寫入與基本查詢。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p>pipeline 把節點/邊餵給 store。屬性用 JSON 存，查詢時可過濾。所有 <code>search_graph</code> 的 label/degree 過濾最後都落成 SQL 條件。</p>
+</div>
+</div>
+</details>
+
+<h2>3. 遍歷與搜尋</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">BFS 遍歷（trace_path 底層）</span> <span class="fn-tag">store.c</span><span class="fn-one-liner">從一個節點往外走 N 層找呼叫鏈。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>trace_path</code> 深度 1–5 的 BFS 就在這裡：從 <code>function_name</code> 出發，沿 <code>CALLS</code> 邊的方向（inbound/outbound/both）逐層擴張。<code>&lt;10ms</code> 的秘密是 SQL 的 <code>WHERE source IN (…)</code> 批次過濾，而不是逐一節點查詢。</p>
+</div>
+</div>
+</details>
+
+<details class="fn-block">
+<summary><span class="fn-name">BM25 全文搜尋</span> <span class="fn-tag">store.c</span><span class="fn-one-liner">SQLite FTS5 + cbm_camel_split tokenizer。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>search_code</code> 的底層：對已索引的檔案做全文搜尋。自訂 tokenizer 讓 <code>ProcessOrder</code> 能被 <code>process order</code> 或 <code>process_order</code> 搜到。</p>
+</div>
+</div>
+</details>
+
+<h2>4. 社群偵測</h2>
+
+<details class="fn-block" open>
+<summary><span class="fn-name">Louvain 社群偵測</span> <span class="fn-tag">store.c</span><span class="fn-one-liner">依 CALLS 邊密度把節點分群。</span></summary>
+<div class="fn-body">
+<div class="fn-zh">
+<p><code>get_architecture</code> 的 cluster 就是 Louvain 的產出。它只看圖的結構（邊密度），不需要 embedding——把「一起工作的函式」歸成同一個功能模組。</p>
+</div>
+</div>
+</details>
+
+<div class="callout"><strong>看完這頁你應該能說出</strong>：store 用 SQLite 正規化存圖、BFS 用批次 SQL 而非逐點查詢、搜尋走 FTS5 的自訂 tokenizer、以及 Louvain 只看邊密度就能做功能分群。</div>
+</div>
+
+<footer>
+  <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
+  <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
+</footer>
+</div>
+</body>
+</html>
