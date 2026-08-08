@@ -8,3 +8,6 @@ cache/
 
 # OS
 Thumbs.db
+
+# playwright test artifacts
+.playwright-mcp/
