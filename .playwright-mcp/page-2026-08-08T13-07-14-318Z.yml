@@ -1,0 +1,1620 @@
+- generic [ref=f3e2]:
+  - navigation [ref=f3e3]:
+    - link "首頁" [ref=f3e4] [cursor=pointer]:
+      - /url: ../../index.html
+    - link "概念地圖" [ref=f3e5] [cursor=pointer]:
+      - /url: ../../map.html
+    - link "學習路線" [ref=f3e6] [cursor=pointer]:
+      - /url: ../../learning-path.html
+    - link "安裝指南" [ref=f3e7] [cursor=pointer]:
+      - /url: ../../install.html
+    - link "文件教學" [ref=f3e8] [cursor=pointer]:
+      - /url: ../index.html
+    - link "程式碼對照" [ref=f3e9] [cursor=pointer]:
+      - /url: ../code/index.html
+    - link "實作案例" [ref=f3e10] [cursor=pointer]:
+      - /url: ../worked.html
+    - link "關於" [ref=f3e11] [cursor=pointer]:
+      - /url: ../../about.html
+  - link "← 實作案例" [ref=f3e13] [cursor=pointer]:
+    - /url: ../worked.html
+  - banner [ref=f3e14]:
+    - heading "用 graphify 分析 codebase-memory-mcp" [level=1] [ref=f3e15]
+    - generic [ref=f3e16]: meta 示範：用「另一個知識圖譜工具」掃描 CBM 自己的源碼
+    - generic [ref=f3e17]:
+      - text: 語料：
+      - code [ref=f3e18]: src/
+      - text: +
+      - code [ref=f3e19]: tests/
+      - text: （440 檔）· 對齊 commit
+      - code [ref=f3e20]: 2c50c77
+      - text: · graphify 0.9.36
+  - generic [ref=f3e21]:
+    - generic [ref=f3e22]:
+      - strong [ref=f3e23]: 產出出處
+      - text: ：本案例的互動圖與報告由
+      - link "graphify" [ref=f3e24] [cursor=pointer]:
+        - /url: https://github.com/Graphify-Labs/graphify
+      - text: （Apache-2.0）產生。graphify 是另一個開源知識圖譜工具（Leiden 社群偵測、EXTRACTED/INFERRED 信任標籤、互動 HTML 輸出）；本站用它來分析 codebase-memory-mcp 自己，呈現「知識圖譜工具 × 知識圖譜工具」的對照。產出資料在
+      - code [ref=f3e25]: worked/cbm-source/
+      - text: 。
+    - heading "為什麼做這個案例" [level=2] [ref=f3e26]
+    - paragraph [ref=f3e27]: codebase-memory-mcp（CBM）本身就是一個把 codebase 變知識圖譜的工具。用 graphify 再掃一次 CBM 的源碼，有幾個教學價值：
+    - list [ref=f3e28]:
+      - listitem [ref=f3e29]:
+        - strong [ref=f3e30]: 對照兩種工具哲學
+        - text: ：graphify 偏向「一鍵互動圖 + 審計報告」，CBM 偏向「15 個 MCP 工具 + 即時查詢」。同一份 C 語料，兩者都能給出節點/邊/社群。
+      - listitem [ref=f3e31]:
+        - strong [ref=f3e32]: 驗證 CBM 的模組結構
+        - text: ：graphify 的社群偵測自然地把 343 個社群對應到 CBM 的模組（Cypher engine、MCP server、Daemon IPC…）——側面驗證 CBM 的架構乾淨度。
+      - listitem [ref=f3e33]:
+        - strong [ref=f3e34]: meta 示範
+        - text: ：看一個「會建知識圖譜的 repo」被另一個工具畫成圖。
+    - heading "語料" [level=2] [ref=f3e35]
+    - paragraph [ref=f3e36]:
+      - text: 上游
+      - code [ref=f3e37]: main @ 2c50c77
+      - text: （2026-08-08）的第一方程式碼：
+    - table [ref=f3e38]:
+      - rowgroup [ref=f3e39]:
+        - row [ref=f3e40]:
+          - columnheader "部分" [ref=f3e41]
+          - columnheader "內容" [ref=f3e42]
+          - columnheader "檔案數" [ref=f3e43]
+        - row [ref=f3e44]:
+          - cell [ref=f3e45]:
+            - code [ref=f3e46]: src/
+          - cell "CBM 主體 C 源碼（main/mcp/store/cypher/cli/pipeline/daemon/discover/semantic/ui…）" [ref=f3e47]
+          - cell "193" [ref=f3e48]
+        - row [ref=f3e49]:
+          - cell [ref=f3e50]:
+            - code [ref=f3e51]: tests/
+          - cell "測試（6,768 tests 的 C 測試碼、Hybrid LSP 各語系測試）" [ref=f3e52]
+          - cell "247" [ref=f3e53]
+        - row [ref=f3e54]:
+          - cell "合計" [ref=f3e55]
+          - cell [ref=f3e56]:
+            - text: 純 C 語料（
+            - code [ref=f3e57]: "--code-only"
+            - text: ，零 LLM 成本）
+          - cell [ref=f3e58]:
+            - strong [ref=f3e59]: "440"
+    - paragraph [ref=f3e60]:
+      - text: 刻意排除
+      - code [ref=f3e61]: internal/cbm/vendored/
+      - text: （974 檔第三方 tree-sitter grammars 生成碼）與 docs/assets——圖要呈現「CBM 自己的工程」，不是第三方生成碼。
+    - heading "本站跑的數字" [level=2] [ref=f3e62]
+    - table [ref=f3e63]:
+      - rowgroup [ref=f3e64]:
+        - row [ref=f3e65]:
+          - columnheader "指標" [ref=f3e66]
+          - columnheader "本站實測" [ref=f3e67]
+        - row [ref=f3e68]:
+          - cell "語料檔案數" [ref=f3e69]
+          - cell "440" [ref=f3e70]
+        - row [ref=f3e71]:
+          - cell "節點" [ref=f3e72]
+          - cell [ref=f3e73]:
+            - strong [ref=f3e74]: 15,815
+        - row [ref=f3e75]:
+          - cell "邊" [ref=f3e76]
+          - cell [ref=f3e77]:
+            - strong [ref=f3e78]: 61,988
+        - row [ref=f3e79]:
+          - cell "社群" [ref=f3e80]
+          - cell [ref=f3e81]:
+            - strong [ref=f3e82]: "343"
+            - text: （最大社群 602 節點 = C++ Hybrid LSP tests）
+        - row [ref=f3e83]:
+          - cell "互動圖" [ref=f3e84]
+          - cell "社群聚合檢視（343 社群節點 / 1,977 跨社群邊）" [ref=f3e85]
+        - row [ref=f3e86]:
+          - cell "LLM / API 成本" [ref=f3e87]
+          - cell "0（純 AST，本機執行）" [ref=f3e88]
+        - row [ref=f3e89]:
+          - cell "工具版本" [ref=f3e90]
+          - cell "graphify 0.9.36" [ref=f3e91]
+    - heading "God Nodes（核心抽象）" [level=2] [ref=f3e92]
+    - paragraph [ref=f3e93]: graphify 報告指出連接最多邊的「樞紐節點」——正是 CBM 架構中最關鍵的函式：
+    - table [ref=f3e94]:
+      - rowgroup [ref=f3e95]:
+        - row [ref=f3e96]:
+          - columnheader "函式" [ref=f3e97]
+          - columnheader "邊數" [ref=f3e98]
+          - columnheader "位置" [ref=f3e99]
+        - row [ref=f3e100]:
+          - cell [ref=f3e101]:
+            - code [ref=f3e102]: find_resolved()
+          - cell "679" [ref=f3e103]
+          - cell "LSP 解析核心（各語系共用）" [ref=f3e104]
+        - row [ref=f3e105]:
+          - cell [ref=f3e106]:
+            - code [ref=f3e107]: extract_cpp()
+          - cell "609" [ref=f3e108]
+          - cell "C++ AST 抽取器" [ref=f3e109]
+        - row [ref=f3e110]:
+          - cell [ref=f3e111]:
+            - code [ref=f3e112]: cbm_store_close()
+          - cell "568" [ref=f3e113]
+          - cell "SQLite 圖儲存關閉（全域生命週期）" [ref=f3e114]
+        - row [ref=f3e115]:
+          - cell [ref=f3e116]:
+            - code [ref=f3e117]: cbm_mkdtemp()
+          - cell "522" [ref=f3e118]
+          - cell "平台相容的臨時目錄（跨模組共用）" [ref=f3e119]
+        - row [ref=f3e120]:
+          - cell [ref=f3e121]:
+            - code [ref=f3e122]: extract_rust()
+          - cell "498" [ref=f3e123]
+          - cell "Rust AST 抽取器" [ref=f3e124]
+    - heading "社群對應模組" [level=2] [ref=f3e125]
+    - paragraph [ref=f3e126]: 343 個社群，最大的幾個直接對應 CBM 的模組：
+    - table [ref=f3e127]:
+      - rowgroup [ref=f3e128]:
+        - row [ref=f3e129]:
+          - columnheader "社群（graphify 命名）" [ref=f3e130]
+          - columnheader "節點" [ref=f3e131]
+          - columnheader "對應 CBM 模組" [ref=f3e132]
+        - row [ref=f3e133]:
+          - cell "C++ Hybrid LSP tests" [ref=f3e134]
+          - cell "602" [ref=f3e135]
+          - cell [ref=f3e136]:
+            - code [ref=f3e137]: tests/test_c_lsp.c
+        - row [ref=f3e138]:
+          - cell "Rust LSP resolution tests" [ref=f3e139]
+          - cell "355" [ref=f3e140]
+          - cell [ref=f3e141]:
+            - code [ref=f3e142]: tests/test_rust_lsp.c
+        - row [ref=f3e143]:
+          - cell "Agent registry & profiles" [ref=f3e144]
+          - cell "287" [ref=f3e145]
+          - cell [ref=f3e146]:
+            - code [ref=f3e147]: src/cli/agent_profiles.c
+        - row [ref=f3e148]:
+          - cell "MCP JSON-RPC server" [ref=f3e149]
+          - cell "219" [ref=f3e150]
+          - cell [ref=f3e151]:
+            - code [ref=f3e152]: src/mcp/mcp.c
+        - row [ref=f3e153]:
+          - cell "Daemon IPC & sockets" [ref=f3e154]
+          - cell "196" [ref=f3e155]
+          - cell [ref=f3e156]:
+            - code [ref=f3e157]: src/daemon/ipc.c
+        - row [ref=f3e158]:
+          - cell "Cypher query engine" [ref=f3e159]
+          - cell "136" [ref=f3e160]
+          - cell [ref=f3e161]:
+            - code [ref=f3e162]: src/cypher/cypher.c
+        - row [ref=f3e163]:
+          - cell "File discovery & gitignore" [ref=f3e164]
+          - cell "147" [ref=f3e165]
+          - cell [ref=f3e166]:
+            - code [ref=f3e167]: src/discover/
+    - paragraph [ref=f3e168]:
+      - text: 完整 343 社群清單見
+      - link "GRAPH_REPORT.md" [ref=f3e169] [cursor=pointer]:
+        - /url: ../../worked/cbm-source/GRAPH_REPORT.md
+      - text: 。
+    - heading "互動圖" [level=2] [ref=f3e170]
+    - generic [ref=f3e171]:
+      - generic [ref=f3e172]:
+        - generic [ref=f3e173]: CBM 源碼知識圖譜（社群聚合檢視）
+        - generic [ref=f3e174]:
+          - link "英文界面 ↗" [ref=f3e175] [cursor=pointer]:
+            - /url: ../../worked/cbm-source/graph.html
+          - link "中文界面 ↗" [ref=f3e176] [cursor=pointer]:
+            - /url: ../../worked/cbm-source/graph-zh.html
+      - iframe [ref=f3e177]:
+        - generic [ref=f4e5]:
+          - textbox "Search nodes..." [ref=f4e7]
+          - generic [ref=f4e8]:
+            - heading "節點資訊" [level=3] [ref=f4e9]
+            - generic [ref=f4e10]: 點擊節點查看詳細資訊
+          - generic [ref=f4e11]:
+            - heading "社群" [level=3] [ref=f4e12]
+            - generic [ref=f4e14] [cursor=pointer]:
+              - checkbox "全選" [checked] [ref=f4e15]
+              - text: 全選
+            - generic [ref=f4e16]:
+              - generic [ref=f4e17] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e18]
+                - generic [ref=f4e20]: C++ Hybrid LSP tests
+                - generic [ref=f4e21]: "602"
+              - generic [ref=f4e22] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e23]
+                - generic [ref=f4e25]: Rust LSP resolution tests
+                - generic [ref=f4e26]: "355"
+              - generic [ref=f4e27] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e28]
+                - generic [ref=f4e30]: Agent registry & profiles
+                - generic [ref=f4e31]: "287"
+              - generic [ref=f4e32] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e33]
+                - generic [ref=f4e35]: MCP command executors
+                - generic [ref=f4e36]: "274"
+              - generic [ref=f4e37] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e38]
+                - generic [ref=f4e40]: Install & agent config upsert
+                - generic [ref=f4e41]: "241"
+              - generic [ref=f4e42] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e43]
+                - generic [ref=f4e45]: PHP LSP resolution tests
+                - generic [ref=f4e46]: "224"
+              - generic [ref=f4e47] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e48]
+                - generic [ref=f4e50]: MCP JSON-RPC server
+                - generic [ref=f4e51]: "219"
+              - generic [ref=f4e52] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e53]
+                - generic [ref=f4e55]: Java LSP coverage tests
+                - generic [ref=f4e56]: "206"
+              - generic [ref=f4e57] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e58]
+                - generic [ref=f4e60]: Daemon IPC & sockets
+                - generic [ref=f4e61]: "196"
+              - generic [ref=f4e62] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e63]
+                - generic [ref=f4e65]: Language detection & extensions
+                - generic [ref=f4e66]: "196"
+              - generic [ref=f4e67] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e68]
+                - generic [ref=f4e70]: Store types & architecture info
+                - generic [ref=f4e71]: "190"
+              - generic [ref=f4e72] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e73]
+                - generic [ref=f4e75]: TypeScript LSP resolution tests
+                - generic [ref=f4e76]: "181"
+              - generic [ref=f4e77] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e78]
+                - generic [ref=f4e80]: Compile-commands parsing
+                - generic [ref=f4e81]: "174"
+              - generic [ref=f4e82] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e83]
+                - generic [ref=f4e85]: Graph buffer dump (CBMDump)
+                - generic [ref=f4e86]: "173"
+              - generic [ref=f4e87] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e88]
+                - generic [ref=f4e90]: Daemon runtime IPC frames
+                - generic [ref=f4e91]: "166"
+              - generic [ref=f4e92] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e93]
+                - generic [ref=f4e95]: Hash table & graph buffer utils
+                - generic [ref=f4e96]: "162"
+              - generic [ref=f4e97] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e98]
+                - generic [ref=f4e100]: Daemon runtime workers & progress
+                - generic [ref=f4e101]: "158"
+              - generic [ref=f4e102] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e103]
+                - generic [ref=f4e105]: File discovery & gitignore
+                - generic [ref=f4e106]: "147"
+              - generic [ref=f4e107] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e108]
+                - generic [ref=f4e110]: Daemon application jobs
+                - generic [ref=f4e111]: "146"
+              - generic [ref=f4e112] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e113]
+                - generic [ref=f4e115]: Cypher query engine
+                - generic [ref=f4e116]: "136"
+              - generic [ref=f4e117] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e118]
+                - generic [ref=f4e120]: Daemon update worker
+                - generic [ref=f4e121]: "135"
+              - generic [ref=f4e122] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e123]
+                - generic [ref=f4e125]: Daemon IPC startup lock
+                - generic [ref=f4e126]: "133"
+              - generic [ref=f4e127] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e128]
+                - generic [ref=f4e130]: C Hybrid LSP resolution
+                - generic [ref=f4e131]: "133"
+              - generic [ref=f4e132] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e133]
+                - generic [ref=f4e135]: JSON-like config editor
+                - generic [ref=f4e136]: "132"
+              - generic [ref=f4e137] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e138]
+                - generic [ref=f4e140]: Regression repro tests
+                - generic [ref=f4e141]: "132"
+              - generic [ref=f4e142] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e143]
+                - generic [ref=f4e145]: Graph buffer traversal & parallelism
+                - generic [ref=f4e146]: "125"
+              - generic [ref=f4e147] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e148]
+                - generic [ref=f4e150]: Activation transaction (install)
+                - generic [ref=f4e151]: "124"
+              - generic [ref=f4e152] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e153]
+                - generic [ref=f4e155]: Pipeline lifecycle & store
+                - generic [ref=f4e156]: "124"
+              - generic [ref=f4e157] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e158]
+                - generic [ref=f4e160]: Rust closure resolution
+                - generic [ref=f4e161]: "124"
+              - generic [ref=f4e162] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e163]
+                - generic [ref=f4e165]: YAML config editor
+                - generic [ref=f4e166]: "116"
+              - generic [ref=f4e167] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e168]
+                - generic [ref=f4e170]: Grammar build tests
+                - generic [ref=f4e171]: "116"
+              - generic [ref=f4e172] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e173]
+                - generic [ref=f4e175]: Registry & type resolution
+                - generic [ref=f4e176]: "114"
+              - generic [ref=f4e177] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e178]
+                - generic [ref=f4e180]: Project lock registry
+                - generic [ref=f4e181]: "111"
+              - generic [ref=f4e182] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e183]
+                - generic [ref=f4e185]: Search output & impact analysis
+                - generic [ref=f4e186]: "110"
+              - generic [ref=f4e187] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e188]
+                - generic [ref=f4e190]: Daemon maintenance & version cohort
+                - generic [ref=f4e191]: "109"
+              - generic [ref=f4e192] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e193]
+                - generic [ref=f4e195]: Arena memory & shared registries
+                - generic [ref=f4e196]: "108"
+              - generic [ref=f4e197] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e198]
+                - generic [ref=f4e200]: Diagnostics & logging
+                - generic [ref=f4e201]: "107"
+              - generic [ref=f4e202] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e203]
+                - generic [ref=f4e205]: FQN & relative import resolution
+                - generic [ref=f4e206]: "107"
+              - generic [ref=f4e207] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e208]
+                - generic [ref=f4e210]: Language definition extractors
+                - generic [ref=f4e211]: "106"
+              - generic [ref=f4e212] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e213]
+                - generic [ref=f4e215]: Agent client probes & adapters
+                - generic [ref=f4e216]: "104"
+              - generic [ref=f4e217] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e218]
+                - generic [ref=f4e220]: Subprocess management
+                - generic [ref=f4e221]: "104"
+              - generic [ref=f4e222] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e223]
+                - generic [ref=f4e225]: Java LSP resolution tests
+                - generic [ref=f4e226]: "104"
+              - generic [ref=f4e227] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e228]
+                - generic [ref=f4e230]: LSP resolution probe tests
+                - generic [ref=f4e231]: "103"
+              - generic [ref=f4e232] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e233]
+                - generic [ref=f4e235]: Watcher auto-sync
+                - generic [ref=f4e236]: "102"
+              - generic [ref=f4e237] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e238]
+                - generic [ref=f4e240]: Daemon conflicts & SHA-256
+                - generic [ref=f4e241]: "101"
+              - generic [ref=f4e242] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e243]
+                - generic [ref=f4e245]: Parallel extraction workers
+                - generic [ref=f4e246]: "101"
+              - generic [ref=f4e247] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e248]
+                - generic [ref=f4e250]: CLI main & hook admission
+                - generic [ref=f4e251]: "99"
+              - generic [ref=f4e252] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e253]
+                - generic [ref=f4e255]: Multi-language extraction tests
+                - generic [ref=f4e256]: "99"
+              - generic [ref=f4e257] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e258]
+                - generic [ref=f4e260]: Path utils & profiling
+                - generic [ref=f4e261]: "98"
+              - generic [ref=f4e262] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e263]
+                - generic [ref=f4e265]: Kotlin LSP resolution tests
+                - generic [ref=f4e266]: "98"
+              - generic [ref=f4e267] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e268]
+                - generic [ref=f4e270]: Private file locks (Windows)
+                - generic [ref=f4e271]: "96"
+              - generic [ref=f4e272] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e273]
+                - generic [ref=f4e275]: Python LSP resolution tests
+                - generic [ref=f4e276]: "96"
+              - generic [ref=f4e277] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e278]
+                - generic [ref=f4e280]: Incremental update & ADR tools
+                - generic [ref=f4e281]: "96"
+              - generic [ref=f4e282] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e283]
+                - generic [ref=f4e285]: Node creation probes
+                - generic [ref=f4e286]: "95"
+              - generic [ref=f4e287] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e288]
+                - generic [ref=f4e290]: ADR management & Louvain
+                - generic [ref=f4e291]: "94"
+              - generic [ref=f4e292] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e293]
+                - generic [ref=f4e295]: Community 55
+                - generic [ref=f4e296]: "90"
+              - generic [ref=f4e297] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e298]
+                - generic [ref=f4e300]: Community 56
+                - generic [ref=f4e301]: "88"
+              - generic [ref=f4e302] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e303]
+                - generic [ref=f4e305]: Community 57
+                - generic [ref=f4e306]: "88"
+              - generic [ref=f4e307] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e308]
+                - generic [ref=f4e310]: Community 58
+                - generic [ref=f4e311]: "88"
+              - generic [ref=f4e312] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e313]
+                - generic [ref=f4e315]: Community 59
+                - generic [ref=f4e316]: "87"
+              - generic [ref=f4e317] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e318]
+                - generic [ref=f4e320]: Community 60
+                - generic [ref=f4e321]: "86"
+              - generic [ref=f4e322] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e323]
+                - generic [ref=f4e325]: Community 61
+                - generic [ref=f4e326]: "84"
+              - generic [ref=f4e327] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e328]
+                - generic [ref=f4e330]: Community 62
+                - generic [ref=f4e331]: "84"
+              - generic [ref=f4e332] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e333]
+                - generic [ref=f4e335]: Community 63
+                - generic [ref=f4e336]: "83"
+              - generic [ref=f4e337] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e338]
+                - generic [ref=f4e340]: Community 64
+                - generic [ref=f4e341]: "80"
+              - generic [ref=f4e342] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e343]
+                - generic [ref=f4e345]: Community 65
+                - generic [ref=f4e346]: "79"
+              - generic [ref=f4e347] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e348]
+                - generic [ref=f4e350]: Community 66
+                - generic [ref=f4e351]: "78"
+              - generic [ref=f4e352] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e353]
+                - generic [ref=f4e355]: Community 67
+                - generic [ref=f4e356]: "77"
+              - generic [ref=f4e357] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e358]
+                - generic [ref=f4e360]: Community 68
+                - generic [ref=f4e361]: "77"
+              - generic [ref=f4e362] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e363]
+                - generic [ref=f4e365]: Community 69
+                - generic [ref=f4e366]: "77"
+              - generic [ref=f4e367] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e368]
+                - generic [ref=f4e370]: Community 70
+                - generic [ref=f4e371]: "76"
+              - generic [ref=f4e372] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e373]
+                - generic [ref=f4e375]: Community 71
+                - generic [ref=f4e376]: "76"
+              - generic [ref=f4e377] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e378]
+                - generic [ref=f4e380]: Community 72
+                - generic [ref=f4e381]: "75"
+              - generic [ref=f4e382] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e383]
+                - generic [ref=f4e385]: Community 73
+                - generic [ref=f4e386]: "75"
+              - generic [ref=f4e387] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e388]
+                - generic [ref=f4e390]: Community 74
+                - generic [ref=f4e391]: "73"
+              - generic [ref=f4e392] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e393]
+                - generic [ref=f4e395]: Community 75
+                - generic [ref=f4e396]: "72"
+              - generic [ref=f4e397] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e398]
+                - generic [ref=f4e400]: Community 76
+                - generic [ref=f4e401]: "71"
+              - generic [ref=f4e402] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e403]
+                - generic [ref=f4e405]: Community 77
+                - generic [ref=f4e406]: "71"
+              - generic [ref=f4e407] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e408]
+                - generic [ref=f4e410]: Community 78
+                - generic [ref=f4e411]: "71"
+              - generic [ref=f4e412] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e413]
+                - generic [ref=f4e415]: Community 79
+                - generic [ref=f4e416]: "71"
+              - generic [ref=f4e417] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e418]
+                - generic [ref=f4e420]: Community 80
+                - generic [ref=f4e421]: "70"
+              - generic [ref=f4e422] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e423]
+                - generic [ref=f4e425]: Community 81
+                - generic [ref=f4e426]: "68"
+              - generic [ref=f4e427] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e428]
+                - generic [ref=f4e430]: Community 82
+                - generic [ref=f4e431]: "68"
+              - generic [ref=f4e432] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e433]
+                - generic [ref=f4e435]: Community 83
+                - generic [ref=f4e436]: "66"
+              - generic [ref=f4e437] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e438]
+                - generic [ref=f4e440]: Community 84
+                - generic [ref=f4e441]: "64"
+              - generic [ref=f4e442] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e443]
+                - generic [ref=f4e445]: Community 85
+                - generic [ref=f4e446]: "63"
+              - generic [ref=f4e447] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e448]
+                - generic [ref=f4e450]: Community 86
+                - generic [ref=f4e451]: "61"
+              - generic [ref=f4e452] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e453]
+                - generic [ref=f4e455]: Community 87
+                - generic [ref=f4e456]: "61"
+              - generic [ref=f4e457] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e458]
+                - generic [ref=f4e460]: Community 88
+                - generic [ref=f4e461]: "61"
+              - generic [ref=f4e462] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e463]
+                - generic [ref=f4e465]: Community 89
+                - generic [ref=f4e466]: "61"
+              - generic [ref=f4e467] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e468]
+                - generic [ref=f4e470]: Community 90
+                - generic [ref=f4e471]: "60"
+              - generic [ref=f4e472] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e473]
+                - generic [ref=f4e475]: Community 91
+                - generic [ref=f4e476]: "60"
+              - generic [ref=f4e477] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e478]
+                - generic [ref=f4e480]: Community 92
+                - generic [ref=f4e481]: "60"
+              - generic [ref=f4e482] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e483]
+                - generic [ref=f4e485]: Community 93
+                - generic [ref=f4e486]: "60"
+              - generic [ref=f4e487] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e488]
+                - generic [ref=f4e490]: Community 94
+                - generic [ref=f4e491]: "59"
+              - generic [ref=f4e492] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e493]
+                - generic [ref=f4e495]: Community 95
+                - generic [ref=f4e496]: "59"
+              - generic [ref=f4e497] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e498]
+                - generic [ref=f4e500]: Community 96
+                - generic [ref=f4e501]: "59"
+              - generic [ref=f4e502] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e503]
+                - generic [ref=f4e505]: Community 97
+                - generic [ref=f4e506]: "59"
+              - generic [ref=f4e507] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e508]
+                - generic [ref=f4e510]: Community 98
+                - generic [ref=f4e511]: "58"
+              - generic [ref=f4e512] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e513]
+                - generic [ref=f4e515]: Community 99
+                - generic [ref=f4e516]: "58"
+              - generic [ref=f4e517] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e518]
+                - generic [ref=f4e520]: Community 100
+                - generic [ref=f4e521]: "58"
+              - generic [ref=f4e522] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e523]
+                - generic [ref=f4e525]: Community 101
+                - generic [ref=f4e526]: "57"
+              - generic [ref=f4e527] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e528]
+                - generic [ref=f4e530]: Community 102
+                - generic [ref=f4e531]: "57"
+              - generic [ref=f4e532] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e533]
+                - generic [ref=f4e535]: Community 103
+                - generic [ref=f4e536]: "56"
+              - generic [ref=f4e537] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e538]
+                - generic [ref=f4e540]: Community 104
+                - generic [ref=f4e541]: "56"
+              - generic [ref=f4e542] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e543]
+                - generic [ref=f4e545]: Community 105
+                - generic [ref=f4e546]: "56"
+              - generic [ref=f4e547] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e548]
+                - generic [ref=f4e550]: Community 106
+                - generic [ref=f4e551]: "56"
+              - generic [ref=f4e552] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e553]
+                - generic [ref=f4e555]: Community 107
+                - generic [ref=f4e556]: "56"
+              - generic [ref=f4e557] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e558]
+                - generic [ref=f4e560]: Community 108
+                - generic [ref=f4e561]: "55"
+              - generic [ref=f4e562] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e563]
+                - generic [ref=f4e565]: Community 109
+                - generic [ref=f4e566]: "54"
+              - generic [ref=f4e567] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e568]
+                - generic [ref=f4e570]: Community 110
+                - generic [ref=f4e571]: "54"
+              - generic [ref=f4e572] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e573]
+                - generic [ref=f4e575]: Community 111
+                - generic [ref=f4e576]: "52"
+              - generic [ref=f4e577] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e578]
+                - generic [ref=f4e580]: Community 112
+                - generic [ref=f4e581]: "52"
+              - generic [ref=f4e582] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e583]
+                - generic [ref=f4e585]: Community 113
+                - generic [ref=f4e586]: "52"
+              - generic [ref=f4e587] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e588]
+                - generic [ref=f4e590]: Community 114
+                - generic [ref=f4e591]: "51"
+              - generic [ref=f4e592] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e593]
+                - generic [ref=f4e595]: Community 115
+                - generic [ref=f4e596]: "51"
+              - generic [ref=f4e597] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e598]
+                - generic [ref=f4e600]: Community 116
+                - generic [ref=f4e601]: "49"
+              - generic [ref=f4e602] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e603]
+                - generic [ref=f4e605]: Community 117
+                - generic [ref=f4e606]: "49"
+              - generic [ref=f4e607] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e608]
+                - generic [ref=f4e610]: Community 118
+                - generic [ref=f4e611]: "49"
+              - generic [ref=f4e612] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e613]
+                - generic [ref=f4e615]: Community 119
+                - generic [ref=f4e616]: "48"
+              - generic [ref=f4e617] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e618]
+                - generic [ref=f4e620]: Community 120
+                - generic [ref=f4e621]: "48"
+              - generic [ref=f4e622] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e623]
+                - generic [ref=f4e625]: Community 121
+                - generic [ref=f4e626]: "48"
+              - generic [ref=f4e627] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e628]
+                - generic [ref=f4e630]: Community 122
+                - generic [ref=f4e631]: "46"
+              - generic [ref=f4e632] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e633]
+                - generic [ref=f4e635]: Community 123
+                - generic [ref=f4e636]: "44"
+              - generic [ref=f4e637] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e638]
+                - generic [ref=f4e640]: Community 124
+                - generic [ref=f4e641]: "44"
+              - generic [ref=f4e642] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e643]
+                - generic [ref=f4e645]: Community 125
+                - generic [ref=f4e646]: "43"
+              - generic [ref=f4e647] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e648]
+                - generic [ref=f4e650]: Community 126
+                - generic [ref=f4e651]: "43"
+              - generic [ref=f4e652] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e653]
+                - generic [ref=f4e655]: Community 127
+                - generic [ref=f4e656]: "43"
+              - generic [ref=f4e657] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e658]
+                - generic [ref=f4e660]: Community 128
+                - generic [ref=f4e661]: "42"
+              - generic [ref=f4e662] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e663]
+                - generic [ref=f4e665]: Community 129
+                - generic [ref=f4e666]: "42"
+              - generic [ref=f4e667] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e668]
+                - generic [ref=f4e670]: Community 130
+                - generic [ref=f4e671]: "40"
+              - generic [ref=f4e672] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e673]
+                - generic [ref=f4e675]: Community 131
+                - generic [ref=f4e676]: "40"
+              - generic [ref=f4e677] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e678]
+                - generic [ref=f4e680]: Community 132
+                - generic [ref=f4e681]: "38"
+              - generic [ref=f4e682] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e683]
+                - generic [ref=f4e685]: Community 133
+                - generic [ref=f4e686]: "38"
+              - generic [ref=f4e687] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e688]
+                - generic [ref=f4e690]: Community 134
+                - generic [ref=f4e691]: "37"
+              - generic [ref=f4e692] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e693]
+                - generic [ref=f4e695]: Community 135
+                - generic [ref=f4e696]: "37"
+              - generic [ref=f4e697] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e698]
+                - generic [ref=f4e700]: Community 136
+                - generic [ref=f4e701]: "36"
+              - generic [ref=f4e702] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e703]
+                - generic [ref=f4e705]: Community 137
+                - generic [ref=f4e706]: "36"
+              - generic [ref=f4e707] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e708]
+                - generic [ref=f4e710]: Community 138
+                - generic [ref=f4e711]: "35"
+              - generic [ref=f4e712] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e713]
+                - generic [ref=f4e715]: Community 139
+                - generic [ref=f4e716]: "35"
+              - generic [ref=f4e717] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e718]
+                - generic [ref=f4e720]: Community 140
+                - generic [ref=f4e721]: "35"
+              - generic [ref=f4e722] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e723]
+                - generic [ref=f4e725]: Community 141
+                - generic [ref=f4e726]: "34"
+              - generic [ref=f4e727] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e728]
+                - generic [ref=f4e730]: Community 142
+                - generic [ref=f4e731]: "34"
+              - generic [ref=f4e732] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e733]
+                - generic [ref=f4e735]: Community 143
+                - generic [ref=f4e736]: "34"
+              - generic [ref=f4e737] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e738]
+                - generic [ref=f4e740]: Community 144
+                - generic [ref=f4e741]: "34"
+              - generic [ref=f4e742] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e743]
+                - generic [ref=f4e745]: Community 145
+                - generic [ref=f4e746]: "33"
+              - generic [ref=f4e747] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e748]
+                - generic [ref=f4e750]: Community 146
+                - generic [ref=f4e751]: "33"
+              - generic [ref=f4e752] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e753]
+                - generic [ref=f4e755]: Community 147
+                - generic [ref=f4e756]: "33"
+              - generic [ref=f4e757] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e758]
+                - generic [ref=f4e760]: Community 148
+                - generic [ref=f4e761]: "33"
+              - generic [ref=f4e762] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e763]
+                - generic [ref=f4e765]: Community 149
+                - generic [ref=f4e766]: "33"
+              - generic [ref=f4e767] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e768]
+                - generic [ref=f4e770]: Community 150
+                - generic [ref=f4e771]: "32"
+              - generic [ref=f4e772] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e773]
+                - generic [ref=f4e775]: Community 151
+                - generic [ref=f4e776]: "32"
+              - generic [ref=f4e777] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e778]
+                - generic [ref=f4e780]: Community 152
+                - generic [ref=f4e781]: "32"
+              - generic [ref=f4e782] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e783]
+                - generic [ref=f4e785]: Community 153
+                - generic [ref=f4e786]: "31"
+              - generic [ref=f4e787] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e788]
+                - generic [ref=f4e790]: Community 154
+                - generic [ref=f4e791]: "31"
+              - generic [ref=f4e792] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e793]
+                - generic [ref=f4e795]: Community 155
+                - generic [ref=f4e796]: "31"
+              - generic [ref=f4e797] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e798]
+                - generic [ref=f4e800]: Community 156
+                - generic [ref=f4e801]: "30"
+              - generic [ref=f4e802] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e803]
+                - generic [ref=f4e805]: Community 157
+                - generic [ref=f4e806]: "30"
+              - generic [ref=f4e807] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e808]
+                - generic [ref=f4e810]: Community 158
+                - generic [ref=f4e811]: "29"
+              - generic [ref=f4e812] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e813]
+                - generic [ref=f4e815]: Community 159
+                - generic [ref=f4e816]: "29"
+              - generic [ref=f4e817] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e818]
+                - generic [ref=f4e820]: Community 160
+                - generic [ref=f4e821]: "29"
+              - generic [ref=f4e822] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e823]
+                - generic [ref=f4e825]: Community 161
+                - generic [ref=f4e826]: "28"
+              - generic [ref=f4e827] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e828]
+                - generic [ref=f4e830]: Community 162
+                - generic [ref=f4e831]: "28"
+              - generic [ref=f4e832] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e833]
+                - generic [ref=f4e835]: Community 163
+                - generic [ref=f4e836]: "28"
+              - generic [ref=f4e837] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e838]
+                - generic [ref=f4e840]: Community 164
+                - generic [ref=f4e841]: "28"
+              - generic [ref=f4e842] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e843]
+                - generic [ref=f4e845]: Community 165
+                - generic [ref=f4e846]: "26"
+              - generic [ref=f4e847] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e848]
+                - generic [ref=f4e850]: Community 166
+                - generic [ref=f4e851]: "26"
+              - generic [ref=f4e852] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e853]
+                - generic [ref=f4e855]: Community 167
+                - generic [ref=f4e856]: "26"
+              - generic [ref=f4e857] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e858]
+                - generic [ref=f4e860]: Community 168
+                - generic [ref=f4e861]: "26"
+              - generic [ref=f4e862] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e863]
+                - generic [ref=f4e865]: Community 169
+                - generic [ref=f4e866]: "25"
+              - generic [ref=f4e867] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e868]
+                - generic [ref=f4e870]: Community 170
+                - generic [ref=f4e871]: "25"
+              - generic [ref=f4e872] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e873]
+                - generic [ref=f4e875]: Community 171
+                - generic [ref=f4e876]: "25"
+              - generic [ref=f4e877] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e878]
+                - generic [ref=f4e880]: Community 172
+                - generic [ref=f4e881]: "25"
+              - generic [ref=f4e882] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e883]
+                - generic [ref=f4e885]: Community 173
+                - generic [ref=f4e886]: "25"
+              - generic [ref=f4e887] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e888]
+                - generic [ref=f4e890]: Community 174
+                - generic [ref=f4e891]: "24"
+              - generic [ref=f4e892] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e893]
+                - generic [ref=f4e895]: Community 175
+                - generic [ref=f4e896]: "24"
+              - generic [ref=f4e897] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e898]
+                - generic [ref=f4e900]: Community 176
+                - generic [ref=f4e901]: "23"
+              - generic [ref=f4e902] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e903]
+                - generic [ref=f4e905]: Community 177
+                - generic [ref=f4e906]: "23"
+              - generic [ref=f4e907] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e908]
+                - generic [ref=f4e910]: Community 178
+                - generic [ref=f4e911]: "23"
+              - generic [ref=f4e912] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e913]
+                - generic [ref=f4e915]: Community 179
+                - generic [ref=f4e916]: "22"
+              - generic [ref=f4e917] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e918]
+                - generic [ref=f4e920]: Community 180
+                - generic [ref=f4e921]: "22"
+              - generic [ref=f4e922] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e923]
+                - generic [ref=f4e925]: Community 181
+                - generic [ref=f4e926]: "21"
+              - generic [ref=f4e927] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e928]
+                - generic [ref=f4e930]: Community 182
+                - generic [ref=f4e931]: "21"
+              - generic [ref=f4e932] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e933]
+                - generic [ref=f4e935]: Community 183
+                - generic [ref=f4e936]: "20"
+              - generic [ref=f4e937] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e938]
+                - generic [ref=f4e940]: Community 184
+                - generic [ref=f4e941]: "20"
+              - generic [ref=f4e942] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e943]
+                - generic [ref=f4e945]: Community 185
+                - generic [ref=f4e946]: "20"
+              - generic [ref=f4e947] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e948]
+                - generic [ref=f4e950]: Community 186
+                - generic [ref=f4e951]: "20"
+              - generic [ref=f4e952] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e953]
+                - generic [ref=f4e955]: Community 187
+                - generic [ref=f4e956]: "20"
+              - generic [ref=f4e957] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e958]
+                - generic [ref=f4e960]: Community 188
+                - generic [ref=f4e961]: "20"
+              - generic [ref=f4e962] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e963]
+                - generic [ref=f4e965]: Community 189
+                - generic [ref=f4e966]: "20"
+              - generic [ref=f4e967] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e968]
+                - generic [ref=f4e970]: Community 190
+                - generic [ref=f4e971]: "20"
+              - generic [ref=f4e972] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e973]
+                - generic [ref=f4e975]: Community 191
+                - generic [ref=f4e976]: "19"
+              - generic [ref=f4e977] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e978]
+                - generic [ref=f4e980]: Community 192
+                - generic [ref=f4e981]: "19"
+              - generic [ref=f4e982] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e983]
+                - generic [ref=f4e985]: Community 193
+                - generic [ref=f4e986]: "19"
+              - generic [ref=f4e987] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e988]
+                - generic [ref=f4e990]: Community 194
+                - generic [ref=f4e991]: "19"
+              - generic [ref=f4e992] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e993]
+                - generic [ref=f4e995]: Community 195
+                - generic [ref=f4e996]: "19"
+              - generic [ref=f4e997] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e998]
+                - generic [ref=f4e1000]: Community 196
+                - generic [ref=f4e1001]: "19"
+              - generic [ref=f4e1002] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1003]
+                - generic [ref=f4e1005]: Community 197
+                - generic [ref=f4e1006]: "18"
+              - generic [ref=f4e1007] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1008]
+                - generic [ref=f4e1010]: Community 198
+                - generic [ref=f4e1011]: "18"
+              - generic [ref=f4e1012] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1013]
+                - generic [ref=f4e1015]: Community 199
+                - generic [ref=f4e1016]: "18"
+              - generic [ref=f4e1017] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1018]
+                - generic [ref=f4e1020]: Community 200
+                - generic [ref=f4e1021]: "18"
+              - generic [ref=f4e1022] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1023]
+                - generic [ref=f4e1025]: Community 201
+                - generic [ref=f4e1026]: "18"
+              - generic [ref=f4e1027] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1028]
+                - generic [ref=f4e1030]: Community 202
+                - generic [ref=f4e1031]: "18"
+              - generic [ref=f4e1032] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1033]
+                - generic [ref=f4e1035]: Community 203
+                - generic [ref=f4e1036]: "17"
+              - generic [ref=f4e1037] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1038]
+                - generic [ref=f4e1040]: Community 204
+                - generic [ref=f4e1041]: "17"
+              - generic [ref=f4e1042] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1043]
+                - generic [ref=f4e1045]: Community 205
+                - generic [ref=f4e1046]: "17"
+              - generic [ref=f4e1047] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1048]
+                - generic [ref=f4e1050]: Community 206
+                - generic [ref=f4e1051]: "17"
+              - generic [ref=f4e1052] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1053]
+                - generic [ref=f4e1055]: Community 207
+                - generic [ref=f4e1056]: "17"
+              - generic [ref=f4e1057] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1058]
+                - generic [ref=f4e1060]: Community 208
+                - generic [ref=f4e1061]: "17"
+              - generic [ref=f4e1062] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1063]
+                - generic [ref=f4e1065]: Community 209
+                - generic [ref=f4e1066]: "17"
+              - generic [ref=f4e1067] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1068]
+                - generic [ref=f4e1070]: Community 210
+                - generic [ref=f4e1071]: "16"
+              - generic [ref=f4e1072] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1073]
+                - generic [ref=f4e1075]: Community 211
+                - generic [ref=f4e1076]: "15"
+              - generic [ref=f4e1077] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1078]
+                - generic [ref=f4e1080]: Community 212
+                - generic [ref=f4e1081]: "15"
+              - generic [ref=f4e1082] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1083]
+                - generic [ref=f4e1085]: Community 213
+                - generic [ref=f4e1086]: "15"
+              - generic [ref=f4e1087] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1088]
+                - generic [ref=f4e1090]: Community 214
+                - generic [ref=f4e1091]: "15"
+              - generic [ref=f4e1092] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1093]
+                - generic [ref=f4e1095]: Community 215
+                - generic [ref=f4e1096]: "15"
+              - generic [ref=f4e1097] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1098]
+                - generic [ref=f4e1100]: Community 216
+                - generic [ref=f4e1101]: "14"
+              - generic [ref=f4e1102] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1103]
+                - generic [ref=f4e1105]: Community 217
+                - generic [ref=f4e1106]: "14"
+              - generic [ref=f4e1107] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1108]
+                - generic [ref=f4e1110]: Community 218
+                - generic [ref=f4e1111]: "14"
+              - generic [ref=f4e1112] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1113]
+                - generic [ref=f4e1115]: Community 219
+                - generic [ref=f4e1116]: "14"
+              - generic [ref=f4e1117] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1118]
+                - generic [ref=f4e1120]: Community 220
+                - generic [ref=f4e1121]: "14"
+              - generic [ref=f4e1122] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1123]
+                - generic [ref=f4e1125]: Community 221
+                - generic [ref=f4e1126]: "14"
+              - generic [ref=f4e1127] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1128]
+                - generic [ref=f4e1130]: Community 222
+                - generic [ref=f4e1131]: "13"
+              - generic [ref=f4e1132] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1133]
+                - generic [ref=f4e1135]: Community 223
+                - generic [ref=f4e1136]: "13"
+              - generic [ref=f4e1137] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1138]
+                - generic [ref=f4e1140]: Community 224
+                - generic [ref=f4e1141]: "13"
+              - generic [ref=f4e1142] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1143]
+                - generic [ref=f4e1145]: Community 225
+                - generic [ref=f4e1146]: "12"
+              - generic [ref=f4e1147] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1148]
+                - generic [ref=f4e1150]: Community 226
+                - generic [ref=f4e1151]: "12"
+              - generic [ref=f4e1152] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1153]
+                - generic [ref=f4e1155]: Community 227
+                - generic [ref=f4e1156]: "12"
+              - generic [ref=f4e1157] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1158]
+                - generic [ref=f4e1160]: Community 228
+                - generic [ref=f4e1161]: "12"
+              - generic [ref=f4e1162] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1163]
+                - generic [ref=f4e1165]: Community 229
+                - generic [ref=f4e1166]: "12"
+              - generic [ref=f4e1167] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1168]
+                - generic [ref=f4e1170]: Community 230
+                - generic [ref=f4e1171]: "11"
+              - generic [ref=f4e1172] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1173]
+                - generic [ref=f4e1175]: Community 231
+                - generic [ref=f4e1176]: "11"
+              - generic [ref=f4e1177] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1178]
+                - generic [ref=f4e1180]: Community 232
+                - generic [ref=f4e1181]: "11"
+              - generic [ref=f4e1182] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1183]
+                - generic [ref=f4e1185]: Community 233
+                - generic [ref=f4e1186]: "11"
+              - generic [ref=f4e1187] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1188]
+                - generic [ref=f4e1190]: Community 234
+                - generic [ref=f4e1191]: "11"
+              - generic [ref=f4e1192] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1193]
+                - generic [ref=f4e1195]: Community 235
+                - generic [ref=f4e1196]: "10"
+              - generic [ref=f4e1197] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1198]
+                - generic [ref=f4e1200]: Community 236
+                - generic [ref=f4e1201]: "10"
+              - generic [ref=f4e1202] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1203]
+                - generic [ref=f4e1205]: Community 237
+                - generic [ref=f4e1206]: "10"
+              - generic [ref=f4e1207] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1208]
+                - generic [ref=f4e1210]: Community 238
+                - generic [ref=f4e1211]: "10"
+              - generic [ref=f4e1212] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1213]
+                - generic [ref=f4e1215]: Community 239
+                - generic [ref=f4e1216]: "10"
+              - generic [ref=f4e1217] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1218]
+                - generic [ref=f4e1220]: Community 240
+                - generic [ref=f4e1221]: "10"
+              - generic [ref=f4e1222] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1223]
+                - generic [ref=f4e1225]: Community 241
+                - generic [ref=f4e1226]: "9"
+              - generic [ref=f4e1227] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1228]
+                - generic [ref=f4e1230]: Community 242
+                - generic [ref=f4e1231]: "9"
+              - generic [ref=f4e1232] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1233]
+                - generic [ref=f4e1235]: Community 243
+                - generic [ref=f4e1236]: "9"
+              - generic [ref=f4e1237] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1238]
+                - generic [ref=f4e1240]: Community 244
+                - generic [ref=f4e1241]: "8"
+              - generic [ref=f4e1242] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1243]
+                - generic [ref=f4e1245]: Community 245
+                - generic [ref=f4e1246]: "8"
+              - generic [ref=f4e1247] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1248]
+                - generic [ref=f4e1250]: Community 246
+                - generic [ref=f4e1251]: "8"
+              - generic [ref=f4e1252] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1253]
+                - generic [ref=f4e1255]: Community 247
+                - generic [ref=f4e1256]: "8"
+              - generic [ref=f4e1257] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1258]
+                - generic [ref=f4e1260]: Community 248
+                - generic [ref=f4e1261]: "8"
+              - generic [ref=f4e1262] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1263]
+                - generic [ref=f4e1265]: Community 249
+                - generic [ref=f4e1266]: "8"
+              - generic [ref=f4e1267] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1268]
+                - generic [ref=f4e1270]: Community 250
+                - generic [ref=f4e1271]: "8"
+              - generic [ref=f4e1272] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1273]
+                - generic [ref=f4e1275]: Community 251
+                - generic [ref=f4e1276]: "8"
+              - generic [ref=f4e1277] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1278]
+                - generic [ref=f4e1280]: Community 252
+                - generic [ref=f4e1281]: "8"
+              - generic [ref=f4e1282] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1283]
+                - generic [ref=f4e1285]: Community 253
+                - generic [ref=f4e1286]: "8"
+              - generic [ref=f4e1287] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1288]
+                - generic [ref=f4e1290]: Community 254
+                - generic [ref=f4e1291]: "7"
+              - generic [ref=f4e1292] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1293]
+                - generic [ref=f4e1295]: Community 255
+                - generic [ref=f4e1296]: "6"
+              - generic [ref=f4e1297] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1298]
+                - generic [ref=f4e1300]: Community 256
+                - generic [ref=f4e1301]: "6"
+              - generic [ref=f4e1302] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1303]
+                - generic [ref=f4e1305]: Community 257
+                - generic [ref=f4e1306]: "6"
+              - generic [ref=f4e1307] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1308]
+                - generic [ref=f4e1310]: Community 258
+                - generic [ref=f4e1311]: "5"
+              - generic [ref=f4e1312] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1313]
+                - generic [ref=f4e1315]: Community 259
+                - generic [ref=f4e1316]: "5"
+              - generic [ref=f4e1317] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1318]
+                - generic [ref=f4e1320]: Community 260
+                - generic [ref=f4e1321]: "5"
+              - generic [ref=f4e1322] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1323]
+                - generic [ref=f4e1325]: Community 261
+                - generic [ref=f4e1326]: "5"
+              - generic [ref=f4e1327] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1328]
+                - generic [ref=f4e1330]: Community 262
+                - generic [ref=f4e1331]: "5"
+              - generic [ref=f4e1332] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1333]
+                - generic [ref=f4e1335]: Community 263
+                - generic [ref=f4e1336]: "4"
+              - generic [ref=f4e1337] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1338]
+                - generic [ref=f4e1340]: Community 264
+                - generic [ref=f4e1341]: "4"
+              - generic [ref=f4e1342] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1343]
+                - generic [ref=f4e1345]: Community 265
+                - generic [ref=f4e1346]: "4"
+              - generic [ref=f4e1347] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1348]
+                - generic [ref=f4e1350]: Community 266
+                - generic [ref=f4e1351]: "4"
+              - generic [ref=f4e1352] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1353]
+                - generic [ref=f4e1355]: Community 267
+                - generic [ref=f4e1356]: "4"
+              - generic [ref=f4e1357] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1358]
+                - generic [ref=f4e1360]: Community 268
+                - generic [ref=f4e1361]: "4"
+              - generic [ref=f4e1362] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1363]
+                - generic [ref=f4e1365]: Community 269
+                - generic [ref=f4e1366]: "4"
+              - generic [ref=f4e1367] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1368]
+                - generic [ref=f4e1370]: Community 270
+                - generic [ref=f4e1371]: "4"
+              - generic [ref=f4e1372] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1373]
+                - generic [ref=f4e1375]: Community 271
+                - generic [ref=f4e1376]: "4"
+              - generic [ref=f4e1377] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1378]
+                - generic [ref=f4e1380]: Community 272
+                - generic [ref=f4e1381]: "4"
+              - generic [ref=f4e1382] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1383]
+                - generic [ref=f4e1385]: Community 273
+                - generic [ref=f4e1386]: "4"
+              - generic [ref=f4e1387] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1388]
+                - generic [ref=f4e1390]: Community 274
+                - generic [ref=f4e1391]: "4"
+              - generic [ref=f4e1392] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1393]
+                - generic [ref=f4e1395]: Community 275
+                - generic [ref=f4e1396]: "4"
+              - generic [ref=f4e1397] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1398]
+                - generic [ref=f4e1400]: Community 276
+                - generic [ref=f4e1401]: "3"
+              - generic [ref=f4e1402] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1403]
+                - generic [ref=f4e1405]: Community 277
+                - generic [ref=f4e1406]: "3"
+              - generic [ref=f4e1407] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1408]
+                - generic [ref=f4e1410]: Community 278
+                - generic [ref=f4e1411]: "3"
+              - generic [ref=f4e1412] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1413]
+                - generic [ref=f4e1415]: Community 279
+                - generic [ref=f4e1416]: "3"
+              - generic [ref=f4e1417] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1418]
+                - generic [ref=f4e1420]: Community 280
+                - generic [ref=f4e1421]: "3"
+              - generic [ref=f4e1422] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1423]
+                - generic [ref=f4e1425]: Community 281
+                - generic [ref=f4e1426]: "3"
+              - generic [ref=f4e1427] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1428]
+                - generic [ref=f4e1430]: Community 282
+                - generic [ref=f4e1431]: "3"
+              - generic [ref=f4e1432] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1433]
+                - generic [ref=f4e1435]: Community 283
+                - generic [ref=f4e1436]: "3"
+              - generic [ref=f4e1437] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1438]
+                - generic [ref=f4e1440]: Community 284
+                - generic [ref=f4e1441]: "3"
+              - generic [ref=f4e1442] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1443]
+                - generic [ref=f4e1445]: Community 285
+                - generic [ref=f4e1446]: "3"
+              - generic [ref=f4e1447] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1448]
+                - generic [ref=f4e1450]: Community 286
+                - generic [ref=f4e1451]: "3"
+              - generic [ref=f4e1452] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1453]
+                - generic [ref=f4e1455]: Community 287
+                - generic [ref=f4e1456]: "2"
+              - generic [ref=f4e1457] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1458]
+                - generic [ref=f4e1460]: Community 288
+                - generic [ref=f4e1461]: "2"
+              - generic [ref=f4e1462] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1463]
+                - generic [ref=f4e1465]: Community 289
+                - generic [ref=f4e1466]: "2"
+              - generic [ref=f4e1467] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1468]
+                - generic [ref=f4e1470]: Community 290
+                - generic [ref=f4e1471]: "2"
+              - generic [ref=f4e1472] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1473]
+                - generic [ref=f4e1475]: Community 291
+                - generic [ref=f4e1476]: "2"
+              - generic [ref=f4e1477] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1478]
+                - generic [ref=f4e1480]: Community 292
+                - generic [ref=f4e1481]: "2"
+              - generic [ref=f4e1482] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1483]
+                - generic [ref=f4e1485]: Community 293
+                - generic [ref=f4e1486]: "2"
+              - generic [ref=f4e1487] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1488]
+                - generic [ref=f4e1490]: Community 294
+                - generic [ref=f4e1491]: "2"
+              - generic [ref=f4e1492] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1493]
+                - generic [ref=f4e1495]: Community 295
+                - generic [ref=f4e1496]: "2"
+              - generic [ref=f4e1497] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1498]
+                - generic [ref=f4e1500]: Community 296
+                - generic [ref=f4e1501]: "2"
+              - generic [ref=f4e1502] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1503]
+                - generic [ref=f4e1505]: Community 297
+                - generic [ref=f4e1506]: "2"
+              - generic [ref=f4e1507] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1508]
+                - generic [ref=f4e1510]: Community 298
+                - generic [ref=f4e1511]: "2"
+              - generic [ref=f4e1512] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1513]
+                - generic [ref=f4e1515]: Community 299
+                - generic [ref=f4e1516]: "2"
+              - generic [ref=f4e1517] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1518]
+                - generic [ref=f4e1520]: Community 300
+                - generic [ref=f4e1521]: "2"
+              - generic [ref=f4e1522] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1523]
+                - generic [ref=f4e1525]: Community 301
+                - generic [ref=f4e1526]: "2"
+              - generic [ref=f4e1527] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1528]
+                - generic [ref=f4e1530]: Community 302
+                - generic [ref=f4e1531]: "2"
+              - generic [ref=f4e1532] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1533]
+                - generic [ref=f4e1535]: Community 303
+                - generic [ref=f4e1536]: "2"
+              - generic [ref=f4e1537] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1538]
+                - generic [ref=f4e1540]: Community 304
+                - generic [ref=f4e1541]: "2"
+              - generic [ref=f4e1542] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1543]
+                - generic [ref=f4e1545]: Community 305
+                - generic [ref=f4e1546]: "2"
+              - generic [ref=f4e1547] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1548]
+                - generic [ref=f4e1550]: Community 306
+                - generic [ref=f4e1551]: "2"
+              - generic [ref=f4e1552] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1553]
+                - generic [ref=f4e1555]: Community 307
+                - generic [ref=f4e1556]: "2"
+              - generic [ref=f4e1557] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1558]
+                - generic [ref=f4e1560]: Community 308
+                - generic [ref=f4e1561]: "2"
+              - generic [ref=f4e1562] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1563]
+                - generic [ref=f4e1565]: Community 309
+                - generic [ref=f4e1566]: "2"
+              - generic [ref=f4e1567] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1568]
+                - generic [ref=f4e1570]: Community 310
+                - generic [ref=f4e1571]: "2"
+              - generic [ref=f4e1572] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1573]
+                - generic [ref=f4e1575]: Community 311
+                - generic [ref=f4e1576]: "2"
+              - generic [ref=f4e1577] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1578]
+                - generic [ref=f4e1580]: Community 312
+                - generic [ref=f4e1581]: "2"
+              - generic [ref=f4e1582] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1583]
+                - generic [ref=f4e1585]: Community 313
+                - generic [ref=f4e1586]: "2"
+              - generic [ref=f4e1587] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1588]
+                - generic [ref=f4e1590]: Community 314
+                - generic [ref=f4e1591]: "1"
+              - generic [ref=f4e1592] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1593]
+                - generic [ref=f4e1595]: Community 315
+                - generic [ref=f4e1596]: "1"
+              - generic [ref=f4e1597] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1598]
+                - generic [ref=f4e1600]: Community 316
+                - generic [ref=f4e1601]: "1"
+              - generic [ref=f4e1602] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1603]
+                - generic [ref=f4e1605]: Community 317
+                - generic [ref=f4e1606]: "1"
+              - generic [ref=f4e1607] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1608]
+                - generic [ref=f4e1610]: Community 318
+                - generic [ref=f4e1611]: "1"
+              - generic [ref=f4e1612] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1613]
+                - generic [ref=f4e1615]: Community 319
+                - generic [ref=f4e1616]: "1"
+              - generic [ref=f4e1617] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1618]
+                - generic [ref=f4e1620]: Community 320
+                - generic [ref=f4e1621]: "1"
+              - generic [ref=f4e1622] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1623]
+                - generic [ref=f4e1625]: Community 321
+                - generic [ref=f4e1626]: "1"
+              - generic [ref=f4e1627] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1628]
+                - generic [ref=f4e1630]: Community 322
+                - generic [ref=f4e1631]: "1"
+              - generic [ref=f4e1632] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1633]
+                - generic [ref=f4e1635]: Community 323
+                - generic [ref=f4e1636]: "1"
+              - generic [ref=f4e1637] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1638]
+                - generic [ref=f4e1640]: Community 324
+                - generic [ref=f4e1641]: "1"
+              - generic [ref=f4e1642] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1643]
+                - generic [ref=f4e1645]: Community 325
+                - generic [ref=f4e1646]: "1"
+              - generic [ref=f4e1647] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1648]
+                - generic [ref=f4e1650]: Community 326
+                - generic [ref=f4e1651]: "1"
+              - generic [ref=f4e1652] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1653]
+                - generic [ref=f4e1655]: Community 327
+                - generic [ref=f4e1656]: "1"
+              - generic [ref=f4e1657] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1658]
+                - generic [ref=f4e1660]: Community 328
+                - generic [ref=f4e1661]: "1"
+              - generic [ref=f4e1662] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1663]
+                - generic [ref=f4e1665]: Community 329
+                - generic [ref=f4e1666]: "1"
+              - generic [ref=f4e1667] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1668]
+                - generic [ref=f4e1670]: Community 330
+                - generic [ref=f4e1671]: "1"
+              - generic [ref=f4e1672] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1673]
+                - generic [ref=f4e1675]: Community 331
+                - generic [ref=f4e1676]: "1"
+              - generic [ref=f4e1677] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1678]
+                - generic [ref=f4e1680]: Community 332
+                - generic [ref=f4e1681]: "1"
+              - generic [ref=f4e1682] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1683]
+                - generic [ref=f4e1685]: Community 333
+                - generic [ref=f4e1686]: "1"
+              - generic [ref=f4e1687] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1688]
+                - generic [ref=f4e1690]: Community 334
+                - generic [ref=f4e1691]: "1"
+              - generic [ref=f4e1692] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1693]
+                - generic [ref=f4e1695]: Community 335
+                - generic [ref=f4e1696]: "1"
+              - generic [ref=f4e1697] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1698]
+                - generic [ref=f4e1700]: Community 336
+                - generic [ref=f4e1701]: "1"
+              - generic [ref=f4e1702] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1703]
+                - generic [ref=f4e1705]: Community 337
+                - generic [ref=f4e1706]: "1"
+              - generic [ref=f4e1707] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1708]
+                - generic [ref=f4e1710]: Community 338
+                - generic [ref=f4e1711]: "1"
+              - generic [ref=f4e1712] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1713]
+                - generic [ref=f4e1715]: Community 339
+                - generic [ref=f4e1716]: "1"
+              - generic [ref=f4e1717] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1718]
+                - generic [ref=f4e1720]: Community 340
+                - generic [ref=f4e1721]: "1"
+              - generic [ref=f4e1722] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1723]
+                - generic [ref=f4e1725]: Community 341
+                - generic [ref=f4e1726]: "1"
+              - generic [ref=f4e1727] [cursor=pointer]:
+                - checkbox [checked] [ref=f4e1728]
+                - generic [ref=f4e1730]: Community 342
+                - generic [ref=f4e1731]: "1"
+          - generic [ref=f4e1732]: 343 nodes · 1977 edges · 343 communities
+    - paragraph [ref=f3e178]: 因為全圖 15,815 節點超過 graphify 的 5,000 節點視覺化上限，自動聚合為社群檢視——這反而是好事：一眼看到整個 CBM 的模組結構與跨模組呼叫。
+    - heading "如何重現" [level=2] [ref=f3e179]
+    - code [ref=f3e181]: "# 0. 安裝 graphify（PyPI 套件名 graphifyy，雙 y） uv tool install graphifyy # 1. 準備語料（只保留第一方程式碼） git clone https://github.com/DeusData/codebase-memory-mcp.git cbm git -C cbm checkout 2c50c7741ec89dbcf43c2c85e005c0b58a4dbbf3 mkdir corpus && cp -R cbm/src corpus/ && cp -R cbm/tests corpus/ # 2. 跑完整 pipeline（code-only，零 API key） graphify corpus --code-only # 3. 產出在 graphify-out/ # graph.html 互動圖（社群聚合檢視） # graph.json 全量圖資料（15,815 nodes / 61,988 edges） # GRAPH_REPORT.md 審計報告 # 4. 中文化 UI（選擇性） cp graphify-out/graph.html graphify-out/graph-zh.html # 替換 lang=\"en\" → lang=\"zh-Hant\" 及 UI 字串（Search / Node Info / Communities…）"
+    - heading "已知限制" [level=2] [ref=f3e182]
+    - list [ref=f3e183]:
+      - listitem [ref=f3e184]: 語料排除 vendored grammars 與 docs，節點數不代表 CBM 全 repo（2023 檔）。
+      - listitem [ref=f3e185]:
+        - text: 互動圖是社群聚合檢視，想看單節點細節請用
+        - code [ref=f3e186]: graph.json
+        - text: 或改掃
+        - code [ref=f3e187]: src/
+        - text: 單一目錄（193 檔，較可能落在節點級檢視範圍）。
+      - listitem [ref=f3e188]: graphify 的社群偵測（Leiden）與 CBM 的 Louvain 演算法不同——數字不直接可比，本頁只做結構對照。
+    - generic [ref=f3e189]:
+      - strong [ref=f3e190]: 看完這個案例你應該能說出
+      - text: ：CBM 的模組邊界在哪、為什麼
+      - code [ref=f3e191]: cbm_store_close()
+      - text: 是所有模組的生命週期樞紐、以及 graphify 與 CBM 兩種知識圖譜工具的哲學差異。
+  - contentinfo [ref=f3e192]:
+    - generic [ref=f3e193]:
+      - text: 這是
+      - link "DeusData/codebase-memory-mcp" [ref=f3e194] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: 的非官方繁體中文教學站。
+    - generic [ref=f3e195]:
+      - text: 內容 ©
+      - link "DeusData" [ref=f3e196] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: （MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77

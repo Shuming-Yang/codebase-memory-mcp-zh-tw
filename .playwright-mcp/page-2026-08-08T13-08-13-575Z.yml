@@ -1,0 +1,156 @@
+- generic [ref=f8e2]:
+  - navigation [ref=f8e3]:
+    - link "首頁" [ref=f8e4] [cursor=pointer]:
+      - /url: index.html
+    - link "概念地圖" [ref=f8e5] [cursor=pointer]:
+      - /url: map.html
+    - link "學習路線" [ref=f8e6] [cursor=pointer]:
+      - /url: learning-path.html
+    - link "安裝指南" [ref=f8e7] [cursor=pointer]:
+      - /url: install.html
+    - link "文件教學" [ref=f8e8] [cursor=pointer]:
+      - /url: docs/index.html
+    - link "程式碼對照" [ref=f8e9] [cursor=pointer]:
+      - /url: docs/code/index.html
+    - link "實作案例" [ref=f8e10] [cursor=pointer]:
+      - /url: docs/worked.html
+    - link "關於" [ref=f8e11] [cursor=pointer]:
+      - /url: about.html
+  - link "← 回首頁" [ref=f8e13] [cursor=pointer]:
+    - /url: index.html
+  - banner [ref=f8e14]:
+    - heading "學習路線" [level=1] [ref=f8e15]
+    - generic [ref=f8e16]: 從「裝好」到「讀 C 源碼」的五層路線
+  - generic [ref=f8e17]:
+    - generic [ref=f8e18]:
+      - generic [ref=f8e19]:
+        - generic [ref=f8e20]: L0
+        - generic [ref=f8e21]: 裝好它
+        - generic [ref=f8e22]: 10 分鐘內讓 CBM 跑起來
+      - generic [ref=f8e23]:
+        - link "安裝 macOS/Linux 一行安裝、Windows PowerShell、--ui 圖形界面變體。" [ref=f8e24] [cursor=pointer]:
+          - /url: install.html
+          - generic [ref=f8e25]: 安裝
+          - generic [ref=f8e26]: macOS/Linux 一行安裝、Windows PowerShell、--ui 圖形界面變體。
+        - link "15 個工具一覽 知道 index/query/read/ops 四類工具各做什麼。" [ref=f8e27] [cursor=pointer]:
+          - /url: docs/mcp-tools.html
+          - generic [ref=f8e28]: 15 個工具一覽
+          - generic [ref=f8e29]: 知道 index/query/read/ops 四類工具各做什麼。
+    - generic [ref=f8e30]:
+      - generic [ref=f8e31]:
+        - generic [ref=f8e32]: L1
+        - generic [ref=f8e33]: 跑起來
+        - generic [ref=f8e34]: 對一個專案 index 並開始問結構問題
+      - generic [ref=f8e35]:
+        - link "index_repository 對你的專案建立知識圖譜，auto-sync 讓它保持新鮮。" [ref=f8e36] [cursor=pointer]:
+          - /url: docs/mcp-tools.html
+          - generic [ref=f8e37]: index_repository
+          - generic [ref=f8e38]: 對你的專案建立知識圖譜，auto-sync 讓它保持新鮮。
+        - link "search_graph 用 name_pattern / label / degree 做結構搜尋。" [ref=f8e39] [cursor=pointer]:
+          - /url: docs/mcp-tools.html
+          - generic [ref=f8e40]: search_graph
+          - generic [ref=f8e41]: 用 name_pattern / label / degree 做結構搜尋。
+        - link "trace_path 追蹤誰呼叫誰，深度 1–5。" [ref=f8e42] [cursor=pointer]:
+          - /url: docs/mcp-tools.html
+          - generic [ref=f8e43]: trace_path
+          - generic [ref=f8e44]: 追蹤誰呼叫誰，深度 1–5。
+        - link "實作案例 看真實 repo 的索引結果與查詢輸出。" [ref=f8e45] [cursor=pointer]:
+          - /url: docs/worked.html
+          - generic [ref=f8e46]: 實作案例
+          - generic [ref=f8e47]: 看真實 repo 的索引結果與查詢輸出。
+    - generic [ref=f8e48]:
+      - generic [ref=f8e49]:
+        - generic [ref=f8e50]: L2
+        - generic [ref=f8e51]: 讀懂圖
+        - generic [ref=f8e52]: 理解知識圖譜的結構與查詢語言
+      - generic [ref=f8e53]:
+        - link "圖資料模型 13 種節點 label、23 種邊型、qualified name。" [ref=f8e54] [cursor=pointer]:
+          - /url: docs/data-model.html
+          - generic [ref=f8e55]: 圖資料模型
+          - generic [ref=f8e56]: 13 種節點 label、23 種邊型、qualified name。
+        - link "Cypher 子集 openCypher 唯讀子集：MATCH/WHERE/EXISTS、死碼查詢。" [ref=f8e57] [cursor=pointer]:
+          - /url: docs/cypher.html
+          - generic [ref=f8e58]: Cypher 子集
+          - generic [ref=f8e59]: openCypher 唯讀子集：MATCH/WHERE/EXISTS、死碼查詢。
+        - link "detect_changes 把 git diff 映射到受影響符號 + blast radius。" [ref=f8e60] [cursor=pointer]:
+          - /url: docs/mcp-tools.html
+          - generic [ref=f8e61]: detect_changes
+          - generic [ref=f8e62]: 把 git diff 映射到受影響符號 + blast radius。
+        - link "graph.db.zst 團隊共享的壓縮圖快照，隊友 clone 免重 index。" [ref=f8e63] [cursor=pointer]:
+          - /url: docs/graph-artifact.html
+          - generic [ref=f8e64]: graph.db.zst
+          - generic [ref=f8e65]: 團隊共享的壓縮圖快照，隊友 clone 免重 index。
+    - generic [ref=f8e66]:
+      - generic [ref=f8e67]:
+        - generic [ref=f8e68]: L3
+        - generic [ref=f8e69]: 讀原理
+        - generic [ref=f8e70]: 理解索引管線與效能/安全設計
+      - generic [ref=f8e71]:
+        - link "運作原理 無內建 LLM 的哲學、兩層解析（tree-sitter + Hybrid LSP）、RAM-first pipeline。" [ref=f8e72] [cursor=pointer]:
+          - /url: docs/how-it-works.html
+          - generic [ref=f8e73]: 運作原理
+          - generic [ref=f8e74]: 無內建 LLM 的哲學、兩層解析（tree-sitter + Hybrid LSP）、RAM-first pipeline。
+        - link "架構總覽 15 個 src/ 模組職責、索引 pass 順序。" [ref=f8e75] [cursor=pointer]:
+          - /url: docs/architecture.html
+          - generic [ref=f8e76]: 架構總覽
+          - generic [ref=f8e77]: 15 個 src/ 模組職責、索引 pass 順序。
+        - link "效能基準 Linux kernel 3min、Cypher <1ms、token 省 99.2%。" [ref=f8e78] [cursor=pointer]:
+          - /url: docs/performance.html
+          - generic [ref=f8e79]: 效能基準
+          - generic [ref=f8e80]: Linux kernel 3min、Cypher <1ms、token 省 99.2%。
+        - link "安全模型 SLSA3/cosign/VirusTotal/CodeQL、零依賴、無 telemetry。" [ref=f8e81] [cursor=pointer]:
+          - /url: docs/security.html
+          - generic [ref=f8e82]: 安全模型
+          - generic [ref=f8e83]: SLSA3/cosign/VirusTotal/CodeQL、零依賴、無 telemetry。
+        - link "Daemon 一帳號一協調 daemon、admission barrier、CLI 分離。" [ref=f8e84] [cursor=pointer]:
+          - /url: docs/daemon.html
+          - generic [ref=f8e85]: Daemon
+          - generic [ref=f8e86]: 一帳號一協調 daemon、admission barrier、CLI 分離。
+        - link "設定 config 指令、CBM_* 環境變數、.cbmignore、extra_extensions。" [ref=f8e87] [cursor=pointer]:
+          - /url: docs/config.html
+          - generic [ref=f8e88]: 設定
+          - generic [ref=f8e89]: config 指令、CBM_* 環境變數、.cbmignore、extra_extensions。
+    - generic [ref=f8e90]:
+      - generic [ref=f8e91]:
+        - generic [ref=f8e92]: L4
+        - generic [ref=f8e93]: 讀 C 源碼
+        - generic [ref=f8e94]: 直接進 13 萬行純 C 的逐函數講解
+      - generic [ref=f8e95]:
+        - link "mcp/mcp.c 15 工具註冊、JSON-RPC 2.0、session detection。" [ref=f8e96] [cursor=pointer]:
+          - /url: docs/code/mcp.html
+          - generic [ref=f8e97]: mcp/mcp.c
+          - generic [ref=f8e98]: 15 工具註冊、JSON-RPC 2.0、session detection。
+        - link "store/store.c SQLite 圖儲存、遍歷、Louvain。" [ref=f8e99] [cursor=pointer]:
+          - /url: docs/code/store.html
+          - generic [ref=f8e100]: store/store.c
+          - generic [ref=f8e101]: SQLite 圖儲存、遍歷、Louvain。
+        - link "cypher/cypher.c Cypher lexer→parser→planner→executor。" [ref=f8e102] [cursor=pointer]:
+          - /url: docs/code/cypher.html
+          - generic [ref=f8e103]: cypher/cypher.c
+          - generic [ref=f8e104]: Cypher lexer→parser→planner→executor。
+        - link "main.c 單一二進位入口的分派。" [ref=f8e105] [cursor=pointer]:
+          - /url: docs/code/main.html
+          - generic [ref=f8e106]: main.c
+          - generic [ref=f8e107]: 單一二進位入口的分派。
+        - link "cli/cli.c install/update/config、43 個 client surface。" [ref=f8e108] [cursor=pointer]:
+          - /url: docs/code/cli.html
+          - generic [ref=f8e109]: cli/cli.c
+          - generic [ref=f8e110]: install/update/config、43 個 client surface。
+        - link "全部程式碼對照 13 頁逐函數講解。" [ref=f8e111] [cursor=pointer]:
+          - /url: docs/code/index.html
+          - generic [ref=f8e112]: 全部程式碼對照
+          - generic [ref=f8e113]: 13 頁逐函數講解。
+    - generic [ref=f8e114]:
+      - strong [ref=f8e115]: 看完這條路線你應該能
+      - text: ：獨立安裝並使用 CBM 讀懂任何專案、寫出 Cypher 死碼查詢、解釋 Hybrid LSP 為何比純 tree-sitter 強、並能追著 mcp.c 的註冊流程看 source。
+  - contentinfo [ref=f8e116]:
+    - generic [ref=f8e117]:
+      - text: 這是
+      - link "DeusData/codebase-memory-mcp" [ref=f8e118] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: 的非官方繁體中文教學站。
+    - generic [ref=f8e119]:
+      - text: 內容 ©
+      - link "DeusData" [ref=f8e120] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: （MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77

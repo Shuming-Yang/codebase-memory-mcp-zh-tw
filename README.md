@@ -136,7 +136,7 @@ python3 -m http.server 8000   # 本機預覽
 - **CBM 案例的節點數**排除 vendored grammars（974 檔生成碼）與 docs，不代表全 repo（2023 檔）。
 - **互動圖是社群聚合檢視**：15,815 節點超過 graphify 的 5,000 節點視覺化上限，自動聚合為 343 社群節點；想看單節點細節可用 `graph.json`。
 - **graphify 的 Leiden 與 CBM 的 Louvain 演算法不同**——數字不直接可比，案例只做結構對照。
-- **程式碼對照頁陸續補齊中**：目前先完成 mcp/store/cypher/main/cli 五個最高價值模組。
+- **程式碼對照頁**已全數完成（12 頁，對齊上游 `main @ 2c50c77`）。
 
 ## 回饋與貢獻
 

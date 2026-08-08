@@ -1,0 +1,125 @@
+- generic [ref=f6e2]:
+  - navigation [ref=f6e3]:
+    - link "首頁" [ref=f6e4] [cursor=pointer]:
+      - /url: ../../index.html
+    - link "概念地圖" [ref=f6e5] [cursor=pointer]:
+      - /url: ../../map.html
+    - link "學習路線" [ref=f6e6] [cursor=pointer]:
+      - /url: ../../learning-path.html
+    - link "安裝指南" [ref=f6e7] [cursor=pointer]:
+      - /url: ../../install.html
+    - link "文件教學" [ref=f6e8] [cursor=pointer]:
+      - /url: ../index.html
+    - link "程式碼對照" [ref=f6e9] [cursor=pointer]:
+      - /url: index.html
+    - link "實作案例" [ref=f6e10] [cursor=pointer]:
+      - /url: ../worked.html
+    - link "關於" [ref=f6e11] [cursor=pointer]:
+      - /url: ../../about.html
+  - link "← 程式碼對照" [ref=f6e13] [cursor=pointer]:
+    - /url: index.html
+  - banner [ref=f6e14]:
+    - heading "mcp/mcp.c — MCP 工具層" [level=1] [ref=f6e15]
+    - generic [ref=f6e16]: 15 個工具的註冊與執行、JSON-RPC 2.0、session detection
+    - generic [ref=f6e17]:
+      - text: 檔案：
+      - code [ref=f6e18]: src/mcp/mcp.c
+      - text: （11,797 行）·
+      - code [ref=f6e19]: mcp.h
+  - generic [ref=f6e20]:
+    - heading "大方向" [level=2] [ref=f6e21]
+    - paragraph [ref=f6e22]:
+      - code [ref=f6e23]: mcp.c
+      - text: 是 CBM 對 MCP client 的門面。它負責：JSON-RPC 2.0 的解析與回覆、15 個工具的 schema 註冊與分派、session 的生命週期、以及 auto-index 的觸發。當你的 agent 呼叫
+      - code [ref=f6e24]: search_graph
+      - text: ，請求就是在這裡被解包、路由到
+      - code [ref=f6e25]: store/
+      - text: 或
+      - code [ref=f6e26]: cypher/
+      - text: ，再包成 JSON-RPC 回覆。
+    - separator [ref=f6e27]
+    - heading "1. 工具註冊" [level=2] [ref=f6e28]
+    - group [ref=f6e29]:
+      - generic "工具 schema 表 mcp.c 每個工具 = name + description + input schema，註冊進 tools list。" [ref=f6e30] [cursor=pointer]:
+        - generic [ref=f6e31]: 工具 schema 表
+        - generic [ref=f6e32]: mcp.c
+        - generic [ref=f6e33]: 每個工具 = name + description + input schema，註冊進 tools list。
+      - generic [ref=f6e35]:
+        - paragraph [ref=f6e36]:
+          - text: 15 個工具的定義是資料導向的：每個工具列出參數（
+          - code [ref=f6e37]: name
+          - text: /
+          - code [ref=f6e38]: label
+          - text: /
+          - code [ref=f6e39]: qn
+          - text: …）、型別、是否必填。MCP client 靠這份 schema 知道怎麼呼叫。工具的實際執行是
+          - code [ref=f6e40]: switch
+          - text: 或查表分派到對應 handler。
+        - generic [ref=f6e41]:
+          - strong [ref=f6e42]: 教學重點
+          - text: ：MCP 的「工具」在本質上就是「有 JSON schema 的 RPC endpoint」——理解這張表就理解整個工具層的形狀。
+    - group [ref=f6e43]:
+      - generic "cbm_mcp_get_tool_name() · cbm_mcp_get_arguments() mcp.c 從 JSON-RPC 請求取出 tool name 與參數。" [ref=f6e44] [cursor=pointer]:
+        - generic [ref=f6e45]: cbm_mcp_get_tool_name() · cbm_mcp_get_arguments()
+        - generic [ref=f6e46]: mcp.c
+        - generic [ref=f6e47]: 從 JSON-RPC 請求取出 tool name 與參數。
+    - heading "2. Server 生命週期" [level=2] [ref=f6e48]
+    - group [ref=f6e49]:
+      - generic "cbm_mcp_server_new() · cbm_mcp_server_handle() · cbm_mcp_server_evict_idle() mcp.c server 的建立、單次請求處理、閒置回收。" [ref=f6e50] [cursor=pointer]:
+        - generic [ref=f6e51]: cbm_mcp_server_new() · cbm_mcp_server_handle() · cbm_mcp_server_evict_idle()
+        - generic [ref=f6e52]: mcp.c
+        - generic [ref=f6e53]: server 的建立、單次請求處理、閒置回收。
+      - paragraph [ref=f6e56]:
+        - text: MCP server 是 stdio 協議：
+        - code [ref=f6e57]: handle()
+        - text: 讀一行 JSON-RPC、解包、分派、回覆。
+        - code [ref=f6e58]: evict_idle()
+        - text: 與 daemon 合作回收閒置 session 的資源。session 之間透過 daemon 共享索引、watcher、UI。
+    - heading "3. 工具分派（節選）" [level=2] [ref=f6e59]
+    - group [ref=f6e60]:
+      - generic "search_graph / trace_path / query_graph / get_code_snippet mcp.c 查詢類工具：包住 store/ 的圖操作。" [ref=f6e61] [cursor=pointer]:
+        - generic [ref=f6e62]: search_graph / trace_path / query_graph / get_code_snippet
+        - generic [ref=f6e63]: mcp.c
+        - generic [ref=f6e64]: 查詢類工具：包住 store/ 的圖操作。
+      - paragraph [ref=f6e67]:
+        - text: 查詢類工具大多是薄包裝：解析參數 → 呼叫
+        - code [ref=f6e68]: store/
+        - text: （或
+        - code [ref=f6e69]: cypher/
+        - text: ）→ 包成 MCP 結果。真正的圖操作在 store 層。想深入可以接著看
+        - link "store/store.c" [ref=f6e70] [cursor=pointer]:
+          - /url: store.html
+        - text: 與
+        - link "cypher/cypher.c" [ref=f6e71] [cursor=pointer]:
+          - /url: cypher.html
+        - text: 。
+    - group [ref=f6e72]:
+      - generic "index_repository mcp.c 啟動索引（首次全索引或增量）。" [ref=f6e73] [cursor=pointer]:
+        - generic [ref=f6e74]: index_repository
+        - generic [ref=f6e75]: mcp.c
+        - generic [ref=f6e76]: 啟動索引（首次全索引或增量）。
+    - group [ref=f6e77]:
+      - generic "check_index_coverage mcp.c 檢查一組路徑的索引涵蓋率。" [ref=f6e78] [cursor=pointer]:
+        - generic [ref=f6e79]: check_index_coverage
+        - generic [ref=f6e80]: mcp.c
+        - generic [ref=f6e81]: 檢查一組路徑的索引涵蓋率。
+    - heading "4. JSON-RPC 錯誤處理" [level=2] [ref=f6e82]
+    - group [ref=f6e83]:
+      - generic "cbm_jsonrpc_format_error() · cbm_jsonrpc_format_response() mcp.c 包 JSON-RPC 錯誤/成功回覆。" [ref=f6e84] [cursor=pointer]:
+        - generic [ref=f6e85]: cbm_jsonrpc_format_error() · cbm_jsonrpc_format_response()
+        - generic [ref=f6e86]: mcp.c
+        - generic [ref=f6e87]: 包 JSON-RPC 錯誤/成功回覆。
+    - generic [ref=f6e88]:
+      - strong [ref=f6e89]: 看完這頁你應該能說出
+      - text: ：MCP 工具本質上是帶 JSON schema 的 RPC endpoint、mcp.c 是薄門面而重邏輯在 store/cypher、session 生命週期由 daemon 協調、以及 stdout 為何要乾淨。
+  - contentinfo [ref=f6e90]:
+    - generic [ref=f6e91]:
+      - text: 這是
+      - link "DeusData/codebase-memory-mcp" [ref=f6e92] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: 的非官方繁體中文教學站。
+    - generic [ref=f6e93]:
+      - text: 內容 ©
+      - link "DeusData" [ref=f6e94] [cursor=pointer]:
+        - /url: https://github.com/DeusData/codebase-memory-mcp
+      - text: （MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77
