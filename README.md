@@ -151,3 +151,4 @@ python3 -m http.server 8000   # 本機預覽
 - 研究論文：[arXiv:2603.27277](https://arxiv.org/abs/2603.27277)
 - 本站 repo：[Shuming-Yang/codebase-memory-mcp-zh-tw](https://github.com/Shuming-Yang/codebase-memory-mcp-zh-tw)
 - 本站上線：[shuming-yang.github.io/codebase-memory-mcp-zh-tw](https://shuming-yang.github.io/codebase-memory-mcp-zh-tw/)
+- 學習路徑建議服務：[learning-path-advisor](https://shuming-yang.github.io/learning-path-advisor/) — 依角色推薦教學網站學習路徑
