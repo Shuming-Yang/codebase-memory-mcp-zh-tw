@@ -81,6 +81,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：pipeline 的 new/run/free 生命週期、pass 靠 registry 註冊與依序執行、可取消性如何支援更新流程、以及平行化如何貢獻索引速度。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>pipeline 模組負責多 pass 索引的調度。pipeline.c 是主控，registry.c 管理各 pass 的註冊與執行順序。</p>
+<h2>Worked Example</h2>
+<p>追蹤索引管線的執行：</p>
+<pre><code># 1. 找到 pipeline 入口
+search_graph(project="cbm", name_pattern=".*pipeline_run.*", label="Function")
+
+# 2. 找到 pass 註冊
+search_graph(project="cbm", name_pattern=".*register_pass.*", label="Function")
+
+# 3. 看各 pass 的執行順序
+trace_path(project="cbm", function_name="pipeline_run", direction="outbound")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>某個 pass 失敗</td><td>語言支援或記憶體不足</td><td>查看 error log</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 pipeline 的 pass 順序</li>
+<li>[ ] 能追蹤一個 pass 從註冊到執行的完整路徑</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

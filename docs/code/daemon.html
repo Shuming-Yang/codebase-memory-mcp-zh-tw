@@ -83,6 +83,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：daemon 的 bootstrap/lifecycle、IPC 封裝了平台差異、索引是 daemon 的 application job、以及 per-project lock 讓 CLI/MCP 並行寫入不會衝突。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>daemon 模組處理 session 協調、IPC、admission barrier、lifecycle。這是 CBM 多 session 共享資源的基礎設施。</p>
+<h2>Worked Example</h2>
+<p>追蹤 daemon 的核心功能：</p>
+<pre><code># 1. 找到 daemon 入口
+search_graph(project="cbm", name_pattern=".*daemon_start.*", label="Function")
+
+# 2. 找到 IPC 實作
+search_graph(project="cbm", name_pattern=".*ipc_.*", label="Function")
+
+# 3. 找到 admission barrier
+search_graph(project="cbm", name_pattern=".*admission.*", label="Function")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>admission 衝突</td><td>版本不一致</td><td>統一版本</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能追蹤 daemon 的啟動流程</li>
+<li>[ ] 能解釋 admission barrier 的實作方式</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

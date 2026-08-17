@@ -92,6 +92,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：store 用 SQLite 正規化存圖、BFS 用批次 SQL 而非逐點查詢、搜尋走 FTS5 的自訂 tokenizer、以及 Louvain 只看邊密度就能做功能分群。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>store.c 是 SQLite 圖儲存的核心——負責節點/邊的 CRUD、BFS 遍歷、BM25 搜尋、Louvain 社群偵測。所有 MCP 工具的查詢最終都走到 store.c。</p>
+<h2>Worked Example</h2>
+<p>探索 store 的核心功能：</p>
+<pre><code># 1. 找到 BFS 遍歷的實作
+search_graph(project="cbm", name_pattern=".*bfs.*", label="Function")
+
+# 2. 找到 Louvain 社群偵測
+search_graph(project="cbm", name_pattern=".*louvain.*", label="Function")
+
+# 3. 看 store 如何被 MCP 工具使用
+trace_path(project="cbm", function_name="cbm_store_close", direction="inbound")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>SQLite 損壞</td><td>異常關機或多進程並行寫入</td><td>刪除 DB 重新索引</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 store 的核心功能</li>
+<li>[ ] 能追蹤一個查詢從 MCP tool 到 store 的完整路徑</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

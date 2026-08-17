@@ -78,6 +78,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：單一二進位的分派邏輯、MCP 模式如何跟 daemon 合作共享資源、CLI 模式為何刻意不啟動 daemon、以及 stdout 乾淨對 MCP 協議的重要性。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>main.c 是 CBM 的單一二進位入口——所有功能（MCP server、CLI、install/update/config）都從這裡分派。理解 main.c 就理解了 CBM 的啟動流程。</p>
+<h2>Worked Example</h2>
+<p>觀察 main.c 的分派邏輯：</p>
+<pre><code># 1. 用 search_graph 找到 main 函式
+search_graph(project="cbm", name_pattern="^main$", label="Function")
+
+# 2. 讀原始碼
+get_code_snippet(project="cbm", qualified_name="cbm.src.main.main")
+
+# 3. 追蹤它呼叫了哪些模組
+trace_path(project="cbm", function_name="main", direction="outbound")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>main 函式找不到</td><td>C 語言的 main 可能被宏包裝</td><td>用更寬鬆的 regex 搜尋</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能追蹤 main.c 的分派流程</li>
+<li>[ ] 能區分 MCP server mode 與 CLI mode</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

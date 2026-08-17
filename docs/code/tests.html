@@ -84,6 +84,32 @@ build/c/test-runner --list-suites   # 看有哪些 suite</code></pre>
 <div class="callout"><strong>看完這頁你應該能說出</strong>：CBM 的測試主力是 Hybrid LSP 各語系的解析斷言、<code>_for_test()</code> 鉤子讓核心可測、repro/ 放 issue 重現、以及 test.sh 與 CI gate 相同。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 有 6,768 個測試，覆蓋所有模組。測試策略包括單元測試、整合測試、Hybrid LSP 各語系測試。</p>
+<h2>Worked Example</h2>
+<p>探索測試結構：</p>
+<pre><code># 1. 找到測試入口
+search_graph(project="cbm", name_pattern=".*test_.*", label="Function", limit=20)
+
+# 2. 找到 Hybrid LSP 測試
+search_graph(project="cbm", name_pattern=".*test_lsp.*", label="Function")
+
+# 3. 看測試覆蓋範圍
+get_architecture(project="cbm", aspects=["hotspots"])</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>某些測試失敗</td><td>環境或版本不匹配</td><td>確認 CBM 版本與測試環境一致</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 CBM 的測試策略</li>
+<li>[ ] 能追蹤一個測試從發現到執行的流程</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

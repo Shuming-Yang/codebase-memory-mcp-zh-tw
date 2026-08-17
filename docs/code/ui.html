@@ -72,6 +72,31 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：UI 是嵌入式 HTTP server + 前端、3D 座標由 C 側預算好、UI 由 daemon 共享避免重複 server、以及 lean vs ui 兩種 build 的差別。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>ui 模組提供嵌入式 HTTP server + 3D 圖形界面（localhost:9749）。這是 CBM 的視覺化入口。</p>
+<h2>Worked Example</h2>
+<p>啟動並使用 3D UI：</p>
+<pre><code># 1. 啟動 UI
+codebase-memory-mcp --ui
+
+# 2. 開啟瀏覽器
+open http://localhost:9749
+
+# 3. 在 UI 中探索圖結構</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>UI 無法啟動</td><td>port 9749 被佔用</td><td>關閉佔用的程序或用其他 port</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能啟動並使用 3D UI</li>
+<li>[ ] 能在 UI 中做基本的圖探索</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

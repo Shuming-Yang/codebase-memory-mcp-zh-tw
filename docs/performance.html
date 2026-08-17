@@ -74,6 +74,44 @@ codebase-memory-mcp: ~3,400  tokens
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 能在 3 分鐘內索引 kernel 的關鍵（RAM-first + 平行 + 增量）、Cypher &lt;1ms 與 trace &lt;10ms 的數量級、以及「圖查詢取代 grep」為何省下 99.2% token。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的效能有三個關鍵數字：<strong>3 分鐘</strong>（Linux kernel 全索引）、<strong>&lt;1ms</strong>（Cypher 查詢）、<strong>99.2%</strong>（token 節省）。這些數字的背後是 RAM-first pipeline + 平行 worker + 增量更新的工程結果。</p>
+<p>Token 節省 99.2% 的意義是：用 CBM 做 5 次結構查詢大約花 3,400 token，而用 grep 逐檔探索同樣的問題大約要 412,000 token。這直接影響你的 AI agent 的成本與回應品質。</p>
+<h2>Worked Example</h2>
+<p>比較 CBM 與 grep 的 token 消耗：</p>
+<pre><code># 方法 1：grep 逐檔探索（低效）
+grep -r "ProcessOrder" --include="*.ts" src/ | head -20
+# → 回傳 50 行原始碼，agent 需要全部讀完才能判斷
+# → 約消耗 80,000 token（如果檔案很大）
+
+# 方法 2：CBM 圖查詢（高效）
+trace_path(project="my-project", function_name="ProcessOrder", direction="inbound")
+# → 直接回傳結構化結果：[{caller: "OrderService.create", depth: 1}]
+# → 約消耗 680 token
+
+# 方法 3：Cypher 精確查詢
+query_graph(project="my-project", query="MATCH (f:Function)-[:CALLS]->(g:Function) WHERE g.name = 'ProcessOrder' RETURN f.name")
+# → 約消耗 500 token</code></pre>
+<p>三次查詢總計 &lt;2,000 token，而 grep 方式可能要 200,000+ token。</p>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>索引很慢（>10 分鐘）</td><td>專案過大或 worker 數不對</td><td>設定 <code>CBM_WORKERS</code> 環境變數</td></tr>
+<tr><td>Cypher 查詢 >100ms</td><td>全圖掃描（無 WHERE）</td><td>加 WHERE 過濾或用 index</td></tr>
+<tr><td>記憶體不足</td><td>大型專案超出預設記憶體</td><td>設定 <code>CBM_MEM_BUDGET_MB</code></td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能說出 CBM 的三個關鍵效能數字</li>
+<li>[ ] 能解釋 RAM-first pipeline 如何實現 3 分鐘索引 kernel</li>
+<li>[ ] 能用 CBM 替代 grep 做探索，並估算 token 節省</li>
+<li>[ ] 能調整 CBM_WORKERS 和 CBM_MEM_BUDGET_MB</li>
+<li>[ ] 能解釋增量更新如何避免每次全跑</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

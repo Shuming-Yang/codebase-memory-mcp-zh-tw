@@ -56,6 +56,47 @@
 <p class="hint">想看 CBM 對「別的工具」的查詢能力（trace_path / Cypher 死碼），案例會持續新增。</p>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>實作案例展示 CBM 的真實產出——不是示意圖，而是用 graphify 工具掃描 CBM 自己的源碼產生的互動知識圖譜。這是一個「meta 示範」：用一個知識圖譜工具分析另一個知識圖譜工具。</p>
+<p>343 個社群自然地對應 CBM 的模組結構（Cypher engine、MCP server、Daemon IPC…），側面驗證了 CBM 的架構乾淨度。</p>
+<h2>Worked Example</h2>
+<p>重現 CBM 源碼知識圖譜的步驟：</p>
+<pre><code># 1. 安裝 graphify
+uv tool install graphifyy
+
+# 2. 準備語料
+git clone https://github.com/DeusData/codebase-memory-mcp.git cbm
+mkdir corpus && cp -R cbm/src corpus/ && cp -R cbm/tests corpus/
+
+# 3. 跑 code-only 分析
+graphify corpus --code-only
+
+# 4. 產出在 graphify-out/
+ls graphify-out/
+# → graph.html（互動圖）、graph.json（全量資料）、GRAPH_REPORT.md（審計報告）
+
+# 5. 中文化（選擇性）
+cp graphify-out/graph.html graphify-out/graph-zh.html
+# 替換 UI 字串</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>graphify 安裝失敗</td><td>套件名是 <code>graphifyy</code>（雙 y）</td><td>用 <code>uv tool install graphifyy</code></td></tr>
+<tr><td>互動圖只顯示社群聚合</td><td>節點數超過 5,000 上限</td><td>縮小語料範圍或用社群檢視</td></tr>
+<tr><td>審計報告缺少某些模組</td><td>語料排除了 vendored grammars</td><td>這是預期行為（只分析第一方程式碼）</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能用 graphify 掃描一個 codebase 產生知識圖譜</li>
+<li>[ ] 能解讀互動圖中的社群結構</li>
+<li>[ ] 能區分 graphify 與 CBM 的哲學差異</li>
+<li>[ ] 能從 GOD NODE 找出專案的核心抽象</li>
+<li>[ ] 能用 GRAPH_REPORT.md 做架構審計</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

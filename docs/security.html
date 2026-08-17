@@ -79,6 +79,43 @@
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 的 supply chain 六層防護、為何沒有 telemetry 又該怎麼自己抓診斷資料、installer 的三個「絕不」、以及 <code>CBM_ALLOWED_ROOT</code> 何時該設。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的安全模型有六層防護：<strong>VirusTotal</strong>（70+ 防毒引擎掃描）、<strong>SLSA Level 3</strong>（建置來源證明）、<strong>cosign</strong>（keyless 簽章）、<strong>SHA-256 checksums</strong>、<strong>CodeQL SAST</strong>、<strong>零 runtime 依賴</strong>。</p>
+<p>隱私方面：CBM 100% 本機處理、無 telemetry、無 phoning home。語意搜尋的 embedding 模型（nomic-embed-code）編譯進二進位，不需要外部 API。</p>
+<h2>Worked Example</h2>
+<p>驗證 CBM 二進位的安全性：</p>
+<pre><code># 1. 下載 CBM 後驗證 checksum
+curl -LO https://github.com/DeusData/codebase-memory-mcp/releases/latest/download/checksums.txt
+sha256sum -c checksums.txt --ignore-missing
+
+# 2. 驗證 cosign 簽章
+gh attestation verify codebase-memory-mcp --owner DeusData
+
+# 3. 驗證 SLSA provenance
+gh attestation verify codebase-memory-mcp --owner DeusData --predicate-type https://slsa.dev/provenance/v1
+
+# 4. 啟用診斷（需要回報問題時）
+CBM_DIAGNOSTICS=1 codebase-memory-mcp cli index_repository --repo-path ~/project
+# → 產生 trajectory.ndjson 和 snapshot.json</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>checksum 驗證失敗</td><td>下載不完整或被竄改</td><td>重新下載並再次驗證</td></tr>
+<tr><td>cosign 驗證失敗</td><td>gh CLI 未登入或版本過舊</td><td><code>gh auth login</code> 後重試</td></tr>
+<tr><td>診斷 log 未產生</td><td>CBM_DIAGNOSTICS 未在 daemon 啟動前設定</td><td>關閉所有 session，設定環境變數後重開</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能說出 CBM 的六層 supply chain 安全防護</li>
+<li>[ ] 能驗證 CBM 二進位的 checksum 和簽章</li>
+<li>[ ] 能解釋 CBM 為什麼不需要 telemetry</li>
+<li>[ ] 能啟用診斷模式並找到診斷檔案</li>
+<li>[ ] 能解釋 CBM_ALLOWED_ROOT 的安全用途</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

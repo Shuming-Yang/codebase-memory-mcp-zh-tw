@@ -79,6 +79,35 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：Cypher 子集是「四階段編譯」的小型查詢引擎、lexer/parser/planner/executor 各做什麼、<code>unsupported …</code> 在哪一層被拒絕、以及 EXISTS 子查詢如何編譯成單跳存在性檢查。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>cypher.c 實現了 openCypher 唯讀子集的完整編譯器：lexer → parser → planner → executor。這是 CBM 最複雜的模組之一。</p>
+<h2>Worked Example</h2>
+<p>追蹤 Cypher 查詢的執行流程：</p>
+<pre><code># 1. 找到 lexer 入口
+search_graph(project="cbm", name_pattern=".*cypher_lex.*", label="Function")
+
+# 2. 找到 planner
+search_graph(project="cbm", name_pattern=".*cypher_plan.*", label="Function")
+
+# 3. 找到 executor
+search_graph(project="cbm", name_pattern=".*cypher_exec.*", label="Function")
+
+# 4. 追蹤完整流程
+trace_path(project="cbm", function_name="cypher_execute", direction="both")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>Cypher 語法錯誤</td><td>使用了不支援的子集</td><td>查看支援的 Clause 表</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 Cypher 編譯器的四個階段</li>
+<li>[ ] 能追蹤一個 Cypher 查詢從文字到結果的完整流程</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

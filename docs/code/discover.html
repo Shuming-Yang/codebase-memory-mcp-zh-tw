@@ -85,6 +85,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：檔案進圖的三層忽略 + symlink 規則、fast pattern 如何支撐 75K 檔走訪、watcher 由 daemon 共享且用 adaptive interval、以及 auto_watch 的開關。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>discover 模組負責檔案發現：.gitignore → .cbmignore → symlink 處理。這是索引管線的第一步。</p>
+<h2>Worked Example</h2>
+<p>追蹤檔案發現流程：</p>
+<pre><code># 1. 找到 discover 入口
+search_graph(project="cbm", name_pattern=".*discover_files.*", label="Function")
+
+# 2. 找到 gitignore 解析
+search_graph(project="cbm", name_pattern=".*gitignore.*", label="Function")
+
+# 3. 找到 cbmignore 解析
+search_graph(project="cbm", name_pattern=".*cbmignore.*", label="Function")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>某些檔案未被索引</td><td>被 .cbmignore 排除</td><td>檢查 .cbmignore 設定</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述檔案發現的三層過濾</li>
+<li>[ ] 能追蹤一個檔案從發現到索引的流程</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

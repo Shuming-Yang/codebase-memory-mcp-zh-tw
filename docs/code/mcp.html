@@ -111,6 +111,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：MCP 工具本質上是帶 JSON schema 的 RPC endpoint、mcp.c 是薄門面而重邏輯在 store/cypher、session 生命週期由 daemon 協調、以及 stdout 為何要乾淨。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>mcp.c 是 15 個 MCP 工具的註冊與執行中心。它處理 JSON-RPC 2.0 協議、session detection、auto-index。每個工具都是一個獨立的 C 函式，由 mcp.c 統一分派。</p>
+<h2>Worked Example</h2>
+<p>查看 MCP 工具的註冊與執行：</p>
+<pre><code># 1. 找到 MCP server 的入口
+search_graph(project="cbm", name_pattern=".*mcp_server.*", label="Function")
+
+# 2. 找到 tool handler 的註冊
+search_graph(project="cbm", name_pattern=".*tool_handler.*", label="Function")
+
+# 3. 追蹤特定工具的執行路徑
+trace_path(project="cbm", function_name="handle_search_graph", direction="outbound")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>JSON-RPC 錯誤</td><td>工具名稱不匹配</td><td>用 <code>list_projects</code> 確認專案存在</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 MCP server 的啟動流程</li>
+<li>[ ] 能追蹤一個 MCP 工具從接收到執行的完整路徑</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

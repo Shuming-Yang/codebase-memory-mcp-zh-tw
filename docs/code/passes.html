@@ -130,6 +130,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：索引被拆成單一職責的 pass、型別解析由 pass_lsp_cross 負責、Route/Resource 節點來自 pass_route_nodes/infrascan、跨 repo 與相似度各由哪個 pass 產出。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>各 pass 負責索引管線的不同階段：parallel（平行化）、pkgmap（套件解析）、lsp_cross（型別精煉）、semantic_edges（語意邊）、cross_repo（跨 repo）等。</p>
+<h2>Worked Example</h2>
+<p>追蹤特定 pass 的實作：</p>
+<pre><code># 1. 找到 parallel pass
+search_graph(project="cbm", name_pattern=".*pass_parallel.*", label="Function")
+
+# 2. 找到 LSP cross pass
+search_graph(project="cbm", name_pattern=".*pass_lsp_cross.*", label="Function")
+
+# 3. 看 semantic_edges pass
+search_graph(project="cbm", name_pattern=".*pass_semantic.*", label="Function")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>平行化失效</td><td>worker 數設定不對</td><td>調整 CBM_WORKERS</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述各 pass 的職責</li>
+<li>[ ] 能追蹤特定 pass 的實作細節</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

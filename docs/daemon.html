@@ -61,6 +61,45 @@
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：daemon 解決了什麼共享問題、admission barrier 為何要求 exact-build、CLI 為何刻意不連 daemon、以及更新流程「先備好再換」的安全順序。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的 daemon 解決一個實際問題：<strong>你在多個 AI agent session 中使用同一個專案</strong>。如果每個 session 各跑各的 watcher 和索引，就是浪費資源。daemon 用「一帳號一 daemon」的模式讓多個 session 共享 watcher、索引 jobs 和 UI。</p>
+<p>關鍵安全機制是 <strong>exact-build admission barrier</strong>：所有 CBM process 必須是完全相同版本 + 相同 build + 相同 cache root。這防止不同版本的二進位對同一份 SQLite 圖做讀寫導致資料損壞。</p>
+<h2>Worked Example</h2>
+<p>多 session 協作場景：</p>
+<pre><code># Session 1（啟動 daemon）
+$ codebase-memory-mcp cli index_repository --repo-path ~/my-project
+# → daemon 啟動、watcher 開始、索引完成
+
+# Session 2（連接到同一 daemon）
+$ codebase-memory-mcp cli search_graph --project my-project --name-pattern '.*Handler.*'
+# → 直接查詢，不需要重新索引
+
+# Session 3（另一個 agent）
+$ codebase-memory-mcp cli trace_path --project my-project --function-name Handler
+# → 共享同一份圖資料
+
+# 查看 daemon 狀態
+$ cat ~/.cache/codebase-memory-mcp/logs/cbm-daemon.log | tail -20
+# → 看到三個 session 的註冊記錄</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td><code>admission barrier conflict</code></td><td>CBM 版本不一致（不同 session 用不同版本）</td><td>關閉所有 session，統一更新到同一版本</td></tr>
+<tr><td>daemon 不回應</td><td>daemon 進程已死或 cache 損壞</td><td>刪除 <code>~/.cache/codebase-memory-mcp/</code> 重啟</td></tr>
+<tr><td>watcher 不偵測變更</td><td>auto_watch 被關閉</td><td><code>codebase-memory-mcp config set auto_watch true</code></td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能解釋 daemon 如何讓多個 session 共享資源</li>
+<li>[ ] 能說明 exact-build admission barrier 的目的</li>
+<li>[ ] 能區分 daemon-backed session 與 CLI 模式的差異</li>
+<li>[ ] 能找到並閱讀 daemon log 檔案</li>
+<li>[ ] 能解釋更新流程「先備好再換」的安全順序</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

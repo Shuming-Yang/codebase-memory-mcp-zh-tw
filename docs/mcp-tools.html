@@ -176,6 +176,37 @@ codebase-memory-mcp cli query_graph --project my-project --query 'MATCH (f:Funct
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：15 個工具的四類分法、<code>search_graph</code> 為何是發現入口、<code>trace_path</code> 如何取代 grep「誰呼叫誰」、以及每個工具都能用 <code>cli</code> 子指令在本機跑。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的 15 個 MCP 工具分四類：<strong>索引</strong>（index_repository 等）、<strong>查詢</strong>（search_graph / trace_path / query_graph 等）、<strong>讀取</strong>（get_code_snippet / get_architecture 等）、<strong>維運</strong>（manage_adr / ingest_traces 等）。</p>
+<p>最重要的入門模式是：<strong>先 search_graph 發現名稱 → 再 trace_path 追蹤關係 → 最後 get_code_snippet 讀原始碼</strong>。這三個工具的組合能回答大部分「這段程式碼在做什麼」的問題。</p>
+<h2>Worked Example</h2>
+<p>完整探索一個陌生 codebase 的工作流：</p>
+<ol>
+<li>先看架構：<code>get_architecture(project="my-project", aspects=["overview"])</code> — 拿到語言、套件、入口點摘要</li>
+<li>搜尋目標：<code>search_graph(project="my-project", name_pattern=".*auth.*", label="Function")</code> — 找到所有 auth 相關函式</li>
+<li>追蹤呼叫：<code>trace_path(project="my-project", function_name="authenticate", direction="both")</code> — 看誰呼叫它、它呼叫誰</li>
+<li>讀原始碼：<code>get_code_snippet(project="my-project", qualified_name="myproj.src.auth.authenticate")</code> — 直接看實現</li>
+<li>深入查詢：<code>query_graph(project="my-project", query="MATCH (f:Function)-[:CALLS*1..3]->(t:Function) WHERE f.name = 'authenticate' RETURN t.name, count(*) AS freq ORDER BY freq DESC LIMIT 10")</code></li>
+</ol>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td><code>search_graph</code> 找不到函式</td><td>名稱不匹配或專案未索引</td><td>用 <code>list_projects</code> 確認專案存在，用更寬鬆的 regex</td></tr>
+<tr><td><code>get_code_snippet</code> 回傳 qualified name 錯誤</td><td>qualified name 格式不對</td><td>先用 search_graph 拿到正確的 qualified_name</td></tr>
+<tr><td><code>detect_changes</code> 回傳空</td><td>沒有未 commit 的變更</td><td>先做 git modify 再試</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能說出 15 個工具的四類分法</li>
+<li>[ ] 能用 search_graph + trace_path + get_code_snippet 完成一次完整探索</li>
+<li>[ ] 能用 <code>cli</code> 子指令在本機跑任一工具</li>
+<li>[ ] 能解釋 <code>get_graph_schema</code> 為什麼是探索圖結構的起點</li>
+<li>[ ] 能用 <code>detect_changes</code> 做影響分析</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

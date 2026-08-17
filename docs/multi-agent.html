@@ -73,6 +73,41 @@
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：43 平台怎麼分類、conditional 為何安全、Scout/Verify/Auditor 三層差異、工具 profile 的 allowlist 哲學、以及 hooks「fail-open + context-only」的意義。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 支援 43 個 agent 平台，這是透過 <code>install</code> 指令自動設定各平台的 config 實現的。核心概念是 <strong>Scout / Verify / Auditor 三層</strong>：Scout 做快速試探（3-4 個窄呼叫）；Verify 做任務導向的證據收集；Auditor 做完整稽核。</p>
+<p>三層的設計哲學是<strong>漸進式深入</strong>——不要一開始就做完整掃描，而是先快速找到方向，再針對性地深入。這節省 token 也節省時間。</p>
+<h2>Worked Example</h2>
+<p>使用 Scout 層快速探索陌生 codebase：</p>
+<pre><code># Scout 層：快速發現（約 3-4 個窄呼叫）
+search_graph(project="mystery-project", name_pattern=".*main.*", label="Function")
+get_architecture(project="mystery-project", aspects=["overview"])
+
+# Verify 層：任務導向深入
+trace_path(project="mystery-project", function_name="handleRequest", direction="inbound")
+get_code_snippet(project="mystery-project", qualified_name="mystery.src.server.handleRequest")
+
+# Auditor 層：完整稽核
+query_graph(project="mystery-project", query="MATCH (f:Function) WHERE NOT EXISTS { (f)<-[:CALLS]-() } RETURN f.name LIMIT 50")
+check_index_coverage(project="mystery-project", paths=["src/handler.ts"])</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>install 未設定某平台</td><td>平台 config 路徑不存在（conditional 安裝）</td><td>先安裝該平台，再跑 <code>codebase-memory-mcp install</code></td></tr>
+<tr><td>Scout 層回傳太少資訊</td><td>這是設計如此（窄呼叫）</td><td>切換到 Verify 層做更深入的探索</td></tr>
+<tr><td>check_index_coverage 回傳 flagged</td><td>某些檔案未被索引</td><td>調整 .cbmignore 或 auto_index_limit</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能解釋 Scout / Verify / Auditor 三層的差異</li>
+<li>[ ] 能用 install 指令設定你的 agent 平台</li>
+<li>[ ] 能用 check_index_coverage 檢查證據路徑的涵蓋率</li>
+<li>[ ] 能解釋 conditional 安裝的安全意義</li>
+<li>[ ] 能描述 hooks「fail-open + context-only」的設計</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

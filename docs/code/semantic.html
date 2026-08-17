@@ -72,6 +72,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：semantic 搜尋為何不需要 API key（模型編譯進二進位）、11-signal 計分比單一向量距離強在哪、AST profile/ROTSQ 怎麼補 token 向量的盲點、以及 MinHash 產出 SIMILAR_TO。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>semantic 模組處理語意搜尋：nomic-embed-code embeddings（768d int8）、11-signal scoring、MinHash/ROTSQ。這是 CBM v0.9 新增的核心能力。</p>
+<h2>Worked Example</h2>
+<p>追蹤語意搜尋的流程：</p>
+<pre><code># 1. 找到 embedding 生成
+search_graph(project="cbm", name_pattern=".*embed.*", label="Function")
+
+# 2. 找到 11-signal scoring
+search_graph(project="cbm", name_pattern=".*signal.*", label="Function")
+
+# 3. 找到 MinHash
+search_graph(project="cbm", name_pattern=".*minhash.*", label="Function")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>語意搜尋很慢</td><td>embedding 計算密集</td><td>確認 nomic-embed-code 正確載入</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能描述 11-signal scoring 的組成</li>
+<li>[ ] 能追蹤語意搜尋從查詢到結果的流程</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

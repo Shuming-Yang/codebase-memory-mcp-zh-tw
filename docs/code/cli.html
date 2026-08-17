@@ -90,6 +90,32 @@
 <div class="callout"><strong>看完這頁你應該能說出</strong>：為什麼 CBM 不用 in-process updater、43 個平台是「偵測 + conditional」而非全寫、Scout/Verify/Auditor 三層的職責差異、以及 config 存哪、auto_index 是做什麼。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>cli.c 處理 install/uninstall/update/config 等 43 個 client surface 的設定。這是 CBM 與各種 AI agent 平台整合的橋樑。</p>
+<h2>Worked Example</h2>
+<p>追蹤 install 流程：</p>
+<pre><code># 1. 找到 install 入口
+search_graph(project="cbm", name_pattern=".*cli_install.*", label="Function")
+
+# 2. 找到 agent profile 的設定
+search_graph(project="cbm", name_pattern=".*agent_profile.*", label="Function")
+
+# 3. 追蹤 hook 的安裝
+trace_path(project="cbm", function_name="install_hooks", direction="outbound")</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>install 失敗</td><td>平台 config 路徑不存在</td><td>先安裝該平台</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能追蹤 install 流程的完整路徑</li>
+<li>[ ] 能解釋 conditional 安裝的實作方式</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

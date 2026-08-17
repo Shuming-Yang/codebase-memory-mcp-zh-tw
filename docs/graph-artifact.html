@@ -59,6 +59,46 @@
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：graph.db.zst 是什麼、Best/Fast 兩 tier 何時用、bootstrap 如何省掉重索引、merge=ours 為什麼讓二進位不衝突、以及不想共享時怎麼關。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>Graph Artifact 讓團隊共享知識圖譜——把壓縮的 SQLite DB commit 進 repo，隊友 clone 後第一次跑 CBM 就直接載入，不必重跑完整索引。這對大型專案特別有價值（Linux kernel 全索引要 3 分鐘）。</p>
+<p>關鍵設計：<strong>two-tier export</strong>（Best 品質用 zstd -9 + VACUUM；Fast 用 zstd -3 低延遲）+ <strong>merge=ours</strong>（gitattributes 自動設定，並行編輯不衝突）。</p>
+<h2>Worked Example</h2>
+<p>團隊共享 graph artifact 的工作流：</p>
+<pre><code># 1. 你的機器：索引並匯出 artifact
+codebase-memory-mcp cli index_repository --repo-path ~/my-project
+# → 自動產生 .codebase-memory/graph.db.zst
+
+# 2. 確認 artifact 存在
+ls -la .codebase-memory/
+# → graph.db.zst（典型 8-13:1 壓縮比）
+
+# 3. Commit 進 repo
+git add .codebase-memory/ .gitattributes
+git commit -m "chore: add CBM graph artifact for team sharing"
+
+# 4. 隊友 clone 後：
+git clone https://github.com/team/project.git
+codebase-memory-mcp cli index_repository --repo-path ~/project
+# → 自動 bootstrap：解壓 artifact → 增量索引補上 diff</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>artifact 解壓失敗</td><td>CBM 版本不一致（artifact 是舊版產生的）</td><td>確認所有人用相同 CBM 版本</td></tr>
+<tr><td>git merge 衝突</td><td>.gitattributes 的 merge=ours 未生效</td><td>確認 .gitattributes 存在且有 merge=ours 設定</td></tr>
+<tr><td>artifact 太大</td><td>大型專案或未壓縮</td><td>用 Best tier（zstd -9 + VACUUM）重新匯出</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能解釋 graph.db.zst 的 two-tier export</li>
+<li>[ ] 能描述 bootstrap 流程（解壓 → 增量索引）</li>
+<li>[ ] 能解釋 merge=ours 如何防止二進位衝突</li>
+<li>[ ] 能決定何時該 commit artifact、何時該 .gitignore</li>
+<li>[ ] 能用 <code>index_repository</code> 的 persistence 參數控制匯出</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

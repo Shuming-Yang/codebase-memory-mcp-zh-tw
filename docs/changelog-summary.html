@@ -54,6 +54,41 @@
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：CBM 的「語法 → 型別 → 語意」三階段演進、v0.7/v0.8 各新增哪些 Hybrid LSP 語言、v0.9 的語意搜尋與語意邊在哪。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的版本演進有一條清晰的路線：<strong>語法 → 型別 → 語意</strong>。v0.7 新增 Python/PHP/C# 的 Hybrid LSP（型別解析）；v0.8 新增 Java/Kotlin/Rust；v0.9 則加入語意邊（SEMANTICALLY_RELATED / SIMILAR_TO）與語意搜尋。</p>
+<p>理解這條路線有助於判斷你的專案能獲得多少 CBM 的解析能力——如果專案主要用 TypeScript，v0.6+ 就有完整的型別解析；如果是 Rust，需要 v0.8+。</p>
+<h2>Worked Example</h2>
+<p>根據專案語言選擇適合的 CBM 版本：</p>
+<pre><code># 檢查你的專案用什麼語言
+find src/ -name '*.py' | head -5    # Python → 需要 v0.7+
+find src/ -name '*.rs' | head -5    # Rust → 需要 v0.8+
+find src/ -name '*.ts' | head -5    # TypeScript → v0.6+ 即可
+
+# 確認 CBM 版本支援
+codebase-memory-mcp --version
+# → 0.9.x（支援所有語言的 Hybrid LSP + 語意邊）
+
+# 驗證型別解析是否啟動（看 trace_path 的結果品質）
+codebase-memory-mcp cli trace_path --project my-project --function-name main --direction outbound</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>Rust 函式的 CALLS 邊很稀疏</td><td>使用 v0.7 或更早版本</td><td>更新到 v0.8+ 以獲得 Rust Hybrid LSP</td></tr>
+<tr><td>語意搜尋回傳不相關結果</td><td>索引未完成或 embedding 未載入</td><td>確認索引完成，檢查 nomic-embed-code 是否正確載入</td></tr>
+<tr><td>CROSS_* 邊不存在</td><td>未索引多個 repo 或未啟用 cross-repo</td><td>索引多個 repo 到同一個 store</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能說出 CBM 的「語法 → 型別 → 語意」三階段演進</li>
+<li>[ ] 能判斷你的專案需要哪個版本的 CBM</li>
+<li>[ ] 能解釋 v0.9 的語意搜尋如何運作（11-signal scoring）</li>
+<li>[ ] 能用 <code>get_graph_schema</code> 確認圖中有哪些邊型</li>
+<li>[ ] 能解釋 cross-repo 的 CROSS_* 邊如何產生</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

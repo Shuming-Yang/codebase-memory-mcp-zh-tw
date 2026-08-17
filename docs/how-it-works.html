@@ -84,6 +84,41 @@ agent: 用白話英文呈現呼叫鏈</code></pre>
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：為什麼 CBM 不需要內建 LLM、tree-sitter 與 Hybrid LSP 各負責什麼、RAM-first 如何支撐 3 分鐘索引 kernel、以及「Go to Definition 等級」的解析是什麼意思。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的核心設計哲學是<strong>「不內建 LLM」</strong>。這意味著 CBM 專注做結構分析（建圖、存圖、查圖），而把「自然語言 → 圖查詢」的翻譯工作交給你的 MCP client（Claude Code、OpenCode 等）。這樣做有三個好處：不需額外 API key、不增加成本、讓 agent 利用已有的上下文做更好的翻譯。</p>
+<p>兩層解析架構是 CBM 的技術核心：<strong>tree-sitter</strong>（語法層，158 語言）提供快速的結構抽取；<strong>Hybrid LSP</strong>（型別層，10+ 語言）用 import graph 與跨檔 registry 精煉呼叫邊，產出接近 IDE「Go to Definition」等級的解析結果。</p>
+<h2>Worked Example</h2>
+<p>展示「不內建 LLM」的工作流：</p>
+<pre><code># 1. 你問：「什麼呼叫了 ProcessOrder？」
+
+# 2. Agent（Claude Code）自動翻譯為結構查詢：
+trace_path(function_name="ProcessOrder", direction="inbound")
+
+# 3. CBM 執行圖查詢，回傳結構化結果：
+# [{caller: "OrderService.create", depth: 1}, {caller: "OrderController.handle", depth: 2}]
+
+# 4. Agent 用白話呈現：「OrderService.create 呼叫了 ProcessOrder，
+#    而 OrderController.handle 呼叫了 OrderService.create」</code></pre>
+<p>對比 grep 方式：你需要先 `grep -r "ProcessOrder" --include="*.ts"` 拿到 50 行結果，再手動判斷哪些是真正的呼叫。CBM 的圖查詢直接給你結構化答案。</p>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>trace_path 回傳空結果</td><td>函式名不匹配或未索引</td><td>先用 <code>search_graph</code> 確認函式存在</td></tr>
+<tr><td>Cypher 查詢很慢</td><td>使用了全圖掃描（如無 WHERE 的 MATCH）</td><td>加 WHERE 過濾或用 variable-length path 限制深度</td></tr>
+<tr><td>Hybrid LSP 未啟動</td><td>語言不在支援清單</td><td>查看 how-it-works 頁面的 Hybrid LSP 語言表</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能解釋 CBM 為什麼不內建 LLM</li>
+<li>[ ] 能說出 tree-sitter 與 Hybrid LSP 各自的職責</li>
+<li>[ ] 能描述 RAM-first 索引管線的四個步驟</li>
+<li>[ ] 能用 MCP client 呼叫 trace_path 並解讀結果</li>
+<li>[ ] 能解釋「Go to Definition 等級」的型別解析是什麼意思</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

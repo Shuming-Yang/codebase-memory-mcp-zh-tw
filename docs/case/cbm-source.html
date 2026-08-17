@@ -129,6 +129,47 @@ cp graphify-out/graph.html graphify-out/graph-zh.html
 <div class="callout"><strong>看完這個案例你應該能說出</strong>：CBM 的模組邊界在哪、為什麼 <code>cbm_store_close()</code> 是所有模組的生命週期樞紐、以及 graphify 與 CBM 兩種知識圖譜工具的哲學差異。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>這個案例示範「用一個知識圖譜工具分析另一個知識圖譜工具」的 meta 示範。graphify 用 Leiden 社群偵測把 15,815 個節點分成 343 個社群，每個社群自然對應 CBM 的模組結構。</p>
+<p>最有價值的發現是 <strong>God Nodes</strong>（核心抽象）：連接最多邊的函式（如 <code>find_resolved()</code> 有 679 邊）正是 CBM 架構中最關鍵的函式。</p>
+<h2>Worked Example</h2>
+<p>重現案例並分析 God Nodes：</p>
+<pre><code># 1. 按照案例步驟產生 graphify-out/
+graphify corpus --code-only
+
+# 2. 分析 God Nodes（連接最多邊的函式）
+python3 -c "
+import json
+with open('graphify-out/graph.json') as f:
+    data = json.load(f)
+nodes = data['nodes']
+ranked = sorted(nodes, key=lambda n: len(n.get('edges', [])), reverse=True)[:10]
+for n in ranked:
+    print(f"{n['id']}: {len(n.get('edges', []))} edges")
+"
+
+# 3. 找出社群對應的 CBM 模組
+# → C++ Hybrid LSP tests（602 節點）= tests/test_c_lsp.c
+# → MCP JSON-RPC server（219 節點）= src/mcp/mcp.c</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>graph.json 太大無法開啟</td><td>15,815 節點 / 61,988 邊</td><td>用 Python 腳本分析，或只看社群聚合檢視</td></tr>
+<tr><td>社群名稱不明確</td><td>Leiden 偵測自動命名</td><td>對照 GRAPH_REPORT.md 的詳細清單</td></tr>
+<tr><td>與 CBM 的 Louvain 數字不一致</td><td>演算法不同</td><td>這是預期行為，只做結構對照</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能重現案例的完整步驟</li>
+<li>[ ] 能解讀 God Nodes 並連結到 CBM 的模組</li>
+<li>[ ] 能從社群結構推斷 CBM 的架構</li>
+<li>[ ] 能區分 graphify（Leiden）與 CBM（Louvain）的差異</li>
+<li>[ ] 能用互動圖做架構探索</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

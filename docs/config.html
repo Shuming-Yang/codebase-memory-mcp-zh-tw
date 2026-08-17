@@ -76,6 +76,47 @@ dist/
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：config 指令語法與存放位置、auto_index/auto_watch 的差別、CBM_ALLOWED_ROOT 與 CBM_CACHE_DIR 何時用、忽略分層（硬編碼→gitignore→cbmignore）、以及如何把 .blade.php 映射到 PHP。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的設定有三個層級：<strong>config 指令</strong>（SQLite 存放）、<strong>環境變數</strong>（<code>CBM_*</code>）、<strong>忽略檔案</strong>（.cbmignore）。設定的分層設計讓你可以全域設定預設值、專案覆寫、臨時用環境變數調整。</p>
+<p>最常用的設定是 <code>auto_index</code>（session 開始時自動索引）和 <code>auto_watch</code>（背景偵測變更）。兩者的差異：auto_index 在 session 啟動時跑一次；auto_watch 是持續的背景服務。</p>
+<h2>Worked Example</h2>
+<p>設定一個新專案的最佳實踐：</p>
+<pre><code># 1. 啟用自動索引（每次 session 開始自動建圖）
+codebase-memory-mcp config set auto_index true
+
+# 2. 設定自動索引上限（大型專案避免太慢）
+codebase-memory-mcp config set auto_index_limit 50000
+
+# 3. 建立 .cbmignore 排除不需要的檔案
+echo 'build/
+dist/
+*.min.js
+coverage/' > .cbmignore
+
+# 4. 設定自訂副檔名（如果有 .blade.php）
+echo '{"extra_extensions": {".blade.php": "php"}}' > .codebase-memory.json
+
+# 5. 確認設定
+codebase-memory-mcp config list</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>設定改了沒生效</td><td>daemon 已在運行，設定在 daemon 啟動時捕捉</td><td>關閉所有 daemon-backed session 後重開</td></tr>
+<tr><td>.cbmignore 沒效</td><td>語法錯誤（用了正則而非 gitignore 語法）</td><td>確認用 gitignore 語法（*、!、/）</td></tr>
+<tr><td>extra_extensions 被忽略</td><td>副檔名沒以 <code>.</code> 開頭或語言名拼錯</td><td>確認格式：{".ext": "language_name"}</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能用 <code>config list</code> 查看所有設定</li>
+<li>[ ] 能區分 auto_index 與 auto_watch 的差異</li>
+<li>[ ] 能建立 .cbmignore 排除不需要的檔案</li>
+<li>[ ] 能設定 CBM_ALLOWED_ROOT 限制索引範圍</li>
+<li>[ ] 能用 extra_extensions 映射自訂副檔名</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

@@ -105,6 +105,49 @@ RETURN r.method, r.path</code></pre>
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：Cypher 子集的邊界（讀可以、寫不行）、EXISTS 子查詢如何做死碼偵測、variable-length path 的寫法、以及不支援的語法會明確報錯。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的 Cypher 支援是一個<strong>唯讀子集</strong>——你可以讀取圖、搜尋模式、做聚合，但不能寫入（<code>MERGE</code>/<code>CREATE</code>）。這是刻意的設計：防止意外修改圖資料。</p>
+<p>最有價值的 Cypher 功能是 <strong><code>EXISTS { … }</code> 子查詢</strong>，它讓你做「死碼偵測」（找出沒有被任何地方呼叫的函式）。Variable-length paths（<code>[*1..3]</code>）則讓你做多層呼叫鏈分析。</p>
+<h2>Worked Example</h2>
+<p>死碼偵測——找出專案中沒有被呼叫的函式：</p>
+<pre><code>-- 步驟 1：找出所有死碼候選
+MATCH (f:Function)
+WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() }
+  AND f.name CONTAINS 'test' = false
+  AND f.name STARTS WITH '_' = false
+RETURN f.name, f.file_path
+LIMIT 20
+
+-- 步驟 2：進一步確認（看該函式有沒有被 IMPORTS 引用）
+MATCH (f:Function)
+WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() }
+  AND NOT EXISTS { (f)&lt;-[:IMPORTS]-() }
+RETURN f.name, f.file_path, labels(f) AS labels
+
+-- 步驟 3：看 main 的完整呼叫鏈（兩層深度）
+MATCH path = (main:Function)-[:CALLS*1..2]->(target)
+WHERE main.name = 'main'
+RETURN target.name, length(path) AS depth
+ORDER BY depth</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td><code>unsupported syntax</code> 錯誤</td><td>使用了不支援的 Cypher 功能（如 MERGE、list comprehension）</td><td>查看支援的 Clause 表，改用唯讀子集</td></tr>
+<tr><td>查詢回傳空結果</td><td>圖中沒有匹配的節點/邊</td><td>用 <code>get_graph_schema</code> 確認 label 和邊型存在</td></tr>
+<tr><td>EXISTS 查詢很慢</td><td>全圖掃描</td><td>加 WHERE 過濾縮小範圍</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能用 EXISTS 子查詢做死碼偵測</li>
+<li>[ ] 能用 variable-length path 追蹤多層呼叫鏈</li>
+<li>[ ] 能分辨哪些 Cypher 語法在 CBM 中可用、哪些不可用</li>
+<li>[ ] 能用 aggregations（count/sum/avg）做統計查詢</li>
+<li>[ ] 能用 UNION 合併多個查詢的結果</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

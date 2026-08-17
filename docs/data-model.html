@@ -88,6 +88,51 @@ RETURN g.name</code></pre>
 <div class="callout info"><strong>看完這頁你應該能說出</strong>：CALLS / CALL_REFERENCE / USAGE 的差異、Route 與 Resource 節點各代表什麼、qualified name 的格式、以及如何用 Cypher 的 <code>NOT EXISTS</code> 找死碼。</div>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>教學解說</h2>
+<p>CBM 的圖資料模型有 <strong>13 種節點 label</strong>（Project → Function → Route → Resource）和 <strong>23 種邊型</strong>。理解這個模型是使用 Cypher 查詢的基礎。</p>
+<p>最重要的概念是 <strong>CALLS / CALL_REFERENCE / USAGE 三種邊的差異</strong>：它們都代表「看起來像呼叫」的關係，但解析確定性不同。CALLS 代表型別解析成功且唯一；CALL_REFERENCE 代表可呼叫值引用但只是當參數傳遞；USAGE 代表無法證明唯一目標。這是 CBM 比 grep 強的地方——它不硬猜。</p>
+<h2>Worked Example</h2>
+<p>用資料模型 + Cypher 做架構分析：</p>
+<pre><code>-- 1. 找出所有 Route 節點及其 handler
+MATCH (r:Route)-[:HANDLES]->(h:Function)
+RETURN r.method, r.path, h.name
+ORDER BY r.method, r.path
+
+-- 2. 找出哪個套件有最多函式（模組複雜度）
+MATCH (p:Package)-[:CONTAINS_FILE]->(f:File)-[:DEFINES]->(func:Function)
+RETURN p.name, count(func) AS func_count
+ORDER BY func_count DESC
+LIMIT 10
+
+-- 3. 找出跨套件的呼叫（耦合度分析）
+MATCH (caller:Function)-[:CALLS]->(callee:Function)
+WHERE caller.file_path CONTAINS '/auth/' AND callee.file_path CONTAINS '/order/'
+RETURN caller.name, callee.name
+
+-- 4. 找出未被使用的型別（可能是死碼）
+MATCH (t:Type)
+WHERE NOT EXISTS { (t)&lt;-[[:USES_TYPE]]-() }
+  AND NOT EXISTS { (t)&lt;-[[:DEFINES]]-() }
+RETURN t.name, t.file_path</code></pre>
+<h2>常見錯誤 / 診斷</h2>
+<table>
+<tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+<tr><td>Cypher 查詢找不到 Route 節點</td><td>專案不是 web 應用或未索引 HTTP routes</td><td>確認 pass_route_nodes 有執行</td></tr>
+<tr><td>CALLS 邊數量異常少</td><td>語言不在 Hybrid LSP 支援範圍，退回文字解析</td><td>用 <code>get_graph_schema</code> 檢查邊型分佈</td></tr>
+<tr><td>qualified name 找不到</td><td>格式不對（少了 project prefix）</td><td>用 search_graph 拿到正確的 qualified_name</td></tr>
+</table>
+<h2>練習 / 驗收清單</h2>
+<ul>
+<li>[ ] 能說出 13 種節點 label 中至少 8 種的意義</li>
+<li>[ ] 能解釋 CALLS / CALL_REFERENCE / USAGE 的差異</li>
+<li>[ ] 能用 qualified name 格式定位任意函式</li>
+<li>[ ] 能用 Cypher 的 NOT EXISTS 找死碼</li>
+<li>[ ] 能用 Route 節點分析 API 端點結構</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
