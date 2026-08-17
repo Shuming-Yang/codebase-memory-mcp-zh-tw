@@ -100,6 +100,41 @@ $ cat ~/.cache/codebase-memory-mcp/logs/cbm-daemon.log | tail -20
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 從 v1 升級到 v2 的正確流程</h2>
+<p>多 session 協作是 daemon 的日常；但真正考驗 daemon 的是<strong>升級</strong>。這裡走一遍官方設計的「先備好再換」流程：</p>
+<ol>
+<li><strong>盤點現況</strong>：<code>cat ~/.cache/codebase-memory-mcp/logs/cbm-daemon.log | tail -30</code>——確認有幾個 active session、daemon 狀態。</li>
+<li><strong>觸發 update</strong>：<code>codebase-memory-mcp update</code>——它會<strong>先下載/驗證/暫存新二進位</strong>（此時舊版照常運作），然後才發布維護意圖。</li>
+<li><strong>觀察協調</strong>：維護意圖發布後，daemon 要求所有 session 取消暫時性操作、等所有 process 退出、獨佔 admission/lifetime barriers 後更換二進位。</li>
+<li><strong>驗證結果</strong>：<code>cat ~/.cache/codebase-memory-mcp/logs/activation-events.ndjson</code>——檢查 activation 進度與結果；衝突的話看 <code>daemon-conflicts.ndjson</code>。</li>
+<li><strong>重啟 session</strong>：提示「重啟 agent session 以載入新 build」後，關閉再重開。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：很多人會直接刪掉二進位再裝新的——這在 active 的 daemon 還在跑時是災難（混版讀寫同一份 SQLite）。官方的順序把「下載」與「替換」拆開，中間用 admission barrier 擋住混版狀態，這是「讓衝突在做事之前就失敗」的設計。</p>
+
+<h2>深入原理 · daemon 的內部協調與「以為 CLI 完全離線」的誤解</h2>
+<p>daemon 不是一個抽象概念，而是一組明確的元件：<code>bootstrap.c</code> 處理 daemon 啟動與鎖、<code>ipc.c</code> 封裝前台 session ↔ daemon 的通訊（endpoint、frame 收送、lifetime reservation、startup gate，POSIX vs Windows 差異被抽象掉）、<code>application.c</code> 排程「索引 job」（有物理上限、busy queue、可被 activation 取消）、<code>runtime.c</code> 管 worker/process 生命週期、<code>project_lock.c</code> 提供 per-project 的 OS-backed 鎖。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：文件說「CLI 模式刻意分離——不啟動 daemon、不留常駐 process」，於是很多人以為「跑 <code>codebase-memory-mcp cli index_repository</code> 是完全孤立的、不會影響其他 session」。但 CLI 模式<strong>仍然參與 OS admission barrier，並會拿 per-project lock</strong>——它只是不註冊 session、不開 watcher。也就是說，一個 CLI 索引在跑的同時，MCP session 對同一專案的寫入會被 per-project lock 序列化。把「不連 daemon」解讀成「與其他 session 零互動」是錯的。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td><code>daemon-conflicts.ndjson</code> 出現記錄</td><td>exact-build admission 失敗：版本/build/cache root 不一致</td><td>關閉所有 session 統一版本；檢查 <code>CBM_CACHE_DIR</code> 是否被多帳號混用</td></tr>
+<tr><td>update 之後 session 仍在跑舊版</td><td>二進位已換，但既有的 MCP session 未重啟</td><td>依提示重啟 agent session 載入新 build</td></tr>
+<tr><td>索引 job 一直排不到</td><td>application job 物理上限已滿或 busy queue 積壓</td><td>等前面的 job 完成，或用 CLI 直接索引（走 per-project lock）</td></tr>
+<tr><td>daemon 無回應</td><td>daemon 進程已死或 IPC 端點失效</td><td>看 cbm-daemon.log；必要時清掉 cache 內失效的 lock/endpoint 後重開</td></tr>
+<tr><td>同專案同時兩個索引互相阻塞</td><td>per-project lock 生效（這其實是設計預期）</td><td>不要並行對同一 repo 發 index；若要並行，用不同 cache root</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋「先備好再換」的更新順序為何能避免混版寫入 SQLite——假設新舊版對同一份圖做寫入會發生什麼。</li>
+<li>設計一個測試：如何驗證「最後一個 session 關閉後 daemon 正確退出、且沒有殘留 job 執行」？</li>
+<li>你在一台機器上開了兩個帳號的 CBM，兩者 <code>CBM_CACHE_DIR</code> 指向同一目錄。會發生什麼？admission barrier 如何處理？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

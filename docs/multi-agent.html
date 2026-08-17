@@ -108,6 +108,41 @@ check_index_coverage(project="mystery-project", paths=["src/handler.ts"])</code>
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 團隊統一部署 CBM 到 43 個平台</h2>
+<p>個人安裝很簡單；10 人團隊、每人用不同 agent（有人 Claude Code、有人 Codex、有人 Cursor）時，需要一套統一 rollout 流程：</p>
+<ol>
+<li><strong>盤點平台</strong>：先確認每個成員「真的在用」哪些 agent——conditional 安裝只會寫入「已存在 config 路徑」的平台，所以盤點決定誰的機器會裝到什麼。</li>
+<li><strong>跑 install</strong>：<code>codebase-memory-mcp install</code>——37 個自動偵測 + 6 個 conditional/explicit 全寫入。檢查每個平台被寫了哪些東西（MCP config、AGENTS.md/skill、hooks）。</li>
+<li><strong>驗證三層 agent</strong>：有 custom-agent 格式的平台會從 canonical contract 產生 <strong>Scout / Verify / Auditor</strong> 三層定義——確認三層都存在且可被呼叫。</li>
+<li><strong>版本管理</strong>：建立「所有成員同一 CBM 版本」的規範——否則 admission barrier 會開始記錄 <code>daemon-conflicts</code>。</li>
+<li><strong>更新機制</strong>：團隊升級走「先備好再換」流程，統一重啟 session。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：Multi-agent 支援的價值不在「支援 43 個」，而在「<strong>同一個 CBM 圖、同一個三層協定，出現在每個人的 agent 裡</strong>」——團隊的 AI 協作有共同的工具語言。從個人到團隊，重點從「裝得起來」變成「版本一致 + 三層齊全 + 更新同步」。</p>
+
+<h2>深入原理 · Installer 的寫入模型與「以為 install 會全平台亂寫」的誤解</h2>
+<p>installer 的寫入是<strong>資料導向</strong>的：每個平台 = 一段 config 寫入描述 + 對應的 context 檔（AGENTS.md / GEMINI.md 等）+ skill + hooks。它從一份 canonical contract 生成三層 agent 的定義。更新的 migration 只覆寫<strong>byte-identical 的先前 Verify 定義</strong>——也就是「跟我們上次寫的一模一樣的版本」才會被覆寫；使用者改過的 agents 不會被悄悄蓋掉。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：看到「43 個平台」四個字，很多人以為 installer 會「把設定寫進每一種 agent 的設定檔」。實際上 <strong>conditional 平台只在「已存在的 config 路徑或文件化證明該平台 active」時才寫入</strong>——沒安裝的 agent 不會被碰。而 hooks 的設計是 <strong>fail-open + context-only</strong>：它只觀察 Grep/Glob/Read 並把圖符號注入 context，<strong>永遠不拒絕或替換工具呼叫</strong>。誤解成「hooks 會攔截我的操作」的人，會錯誤地關掉 CBM 提供的 hooks。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>某平台沒被 install 寫入</td><td>該平台是 conditional，且 config 路徑尚不存在</td><td>先安裝並使用該平台，再重跑 install</td></tr>
+<tr><td>更新後 agent 還是舊定義</td><td>migration 只覆寫 byte-identical 的定義；你的定義被改過</td><td>手動套用新 canonical contract，或先還原再重跑 install</td></tr>
+<tr><td>hook 沒有觸發</td><td>平台版本不支援該 hook 類型，或 hook 未重新載入</td><td>確認平台版本、重啟 agent session</td></tr>
+<tr><td>Scout 層資訊太少</td><td>Scout 設計上就是 3–4 個窄呼叫</td><td>切到 Verify/Auditor 層；不要拿 Scout 當完整探索</td></tr>
+<tr><td>多人同時 install 不同版本</td><td>沒有團隊版本規範</td><td>鎖定同一版本；用 admission barrier 偵測混版</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋為什麼 hooks 必須設計成「fail-open + context-only」而不是「攔截並替換工具呼叫」——風險是什麼？</li>
+<li>設計一份「團隊 CBM 部署 SOP」，涵蓋平台盤點、版本統一、三層驗收、升級流程。</li>
+<li>「conditional 安裝」和「亂寫所有平台」的差別，在安全上為何重要？舉一個具體的風險情境。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

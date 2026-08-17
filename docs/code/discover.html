@@ -111,6 +111,41 @@ search_graph(project="cbm", name_pattern=".*cbmignore.*", label="Function")</cod
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 除錯「為什麼這個檔案沒進圖」</h2>
+<p>最常見的索引問題不是「慢」，而是「檔案不見了」。以「我明明有 <code>legacy/helper.js</code>，但圖裡沒有它」為例：</p>
+<ol>
+<li><strong>確認檔案真的被走訪</strong>：<code>check_index_coverage(project="my-project", paths=["legacy/helper.js"])</code>——它會回傳 indexed / skipped / excluded / flagged 四種狀態之一。</li>
+<li><strong>檢查 ignore 層</strong>：三層依序是硬編碼模式（<code>.git</code>、<code>node_modules</code>）→ <code>.gitignore</code> 階層 → <code>.cbmignore</code>。用 <code>git check-ignore legacy/helper.js</code> 看 git 層；再看 <code>.cbmignore</code> 有沒有比對到它。</li>
+<li><strong>檢查 symlink</strong>：如果 <code>legacy/</code> 是 symlink，檔案<strong>永遠不會進圖</strong>——symlink 一律跳過（防循環、防越界）。</li>
+<li><strong>檢查語言偵測</strong>：<code>language.c</code> 依副檔名判斷；<code>helper.js</code> 沒問題，但如果是 <code>helper.custom</code> 這種自訂副檔名，就要靠 <code>extra_extensions</code> 映射。</li>
+<li><strong>檢查 watcher</strong>：如果是「新增」的檔案，watcher 可能還沒偵測到——<code>cbm_watcher_poll_once()</code> 手動觸發一次，或直接重跑 index_repository。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：檔案沒進圖的原因至少有五種（ignore、symlink、語言、範圍、時間）。先跑 <code>check_index_coverage</code> 得到官方判定，再逐層往下查，比亂猜「是不是 bug」有效——大部分時候是規則設定問題。</p>
+
+<h2>深入原理 · Fast pattern 與「以為 symlink 會跟著走」的誤解</h2>
+<p>75K 檔的 repo 不能逐檔跑 regex 判斷跳不跳過——<code>cbm_matches_fast_pattern()</code> 用快速 pattern 匹配，並在<strong>目錄層級提前剪枝</strong>（<code>cbm_should_skip_dir()</code>）：一個目錄被排除，整個子樹都不走。gitignore 解析（<code>gitignore.c</code>）支援 <code>!</code> 反轉與階層式規則。watcher 由 daemon 擁有，用 git polling + adaptive interval 平衡即時與資源。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人假設「symlink 指向的內容會被當成普通檔案索引」——例如 <code>node_modules</code> 或 <code>vendor</code> 用 symlink 指向別處。實際規則<strong>永遠跳過 symlink</strong>，即使它指向 repo 內的檔案：目的是防循環（symlink 可以指回自己造成無限走訪）與防越界（指到 repo 外洩漏不該進圖的檔案）。所以「我有個 symlink 的 <code>src</code>，怎麼圖是空的」——答案不是 bug，是規則。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>檔案在但圖裡沒有</td><td>被 ignore 或 symlink 排除，或 watcher 未偵測</td><td>先跑 check_index_coverage 拿官方判定，再逐層排查</td></tr>
+<tr><td>新增檔案要等很久才出現</td><td>adaptive interval 較長（為省資源）</td><td>等下一次 poll；或重跑 index_repository 立即更新</td></tr>
+<tr><td>語言偵測錯誤</td><td>自訂副檔名沒映射</td><td>用 <code>extra_extensions</code> 設定副檔名 → 語言映射</td></tr>
+<tr><td><code>!important.js</code> 的反轉規則沒生效</td><td>gitignore 的 <code>!</code> 無法復活「被父目錄排除」的檔案</td><td>改在父層目錄放行，或用 .cbmignore 另列白名單</td></tr>
+<tr><td>一個被排除的目錄拖慢全索引</td><td>目錄級剪枝沒生效（規則寫在太深層）</td><td>把排除規則寫在父目錄層級，讓剪枝早點發生</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>寫一組 <code>.cbmignore</code> 規則：排除 <code>build/</code>、<code>*.min.js</code>、以及 <code>generated/</code> 底下的 <code>proto</code> 檔，同時保留一個例外。</li>
+<li>解釋「目錄級剪枝」為何能讓 75K 檔的 repo 走完——從時間複雜度角度說明它和逐檔 regex 的差別。</li>
+<li>設計一個測試：驗證「symlink 指向 repo 內的檔案不會被索引」這條規則（參照 test_discover 風格）。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

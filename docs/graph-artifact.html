@@ -99,6 +99,40 @@ codebase-memory-mcp cli index_repository --repo-path ~/project
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 10 人團隊的大型 monorepo 的 artifact 策略</h2>
+<p>單一 repo 的手把手共享很簡單；10 人團隊 + 大型 monorepo 時，誰產 artifact、什麼時候產、用哪個 tier，需要一個策略：</p>
+<ol>
+<li><strong>決定哪些場景需要 artifact</strong>：monorepo 全索引可能 10+ 分鐘——只有「首次 clone 的 onboarding」值得吃這成本，日常開發靠增量 watcher。</li>
+<li><strong>CI 統一產出 Best tier</strong>：在 merge 到 main 的 pipeline 上跑 <code>index_repository --repo-path . --persistence</code>，把 <code>.codebase-memory/graph.db.zst</code>（zstd -9 + VACUUM + index 剝離）commit 回 main。這保證 artifact 永遠是「最新 main」的圖。</li>
+<li><strong>隊友 onboarding</strong>：clone 後第一次 <code>index_repository</code> 自動 bootstrap（解壓 + 增量補 local diff），幾分鐘內就有完整圖。</li>
+<li><strong>保留 <code>.gitattributes</code> 的 <code>merge=ours</code></strong>：確保並行開發時 artifact 的 git merge 不會炸出 binary 衝突。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：把「每次每個人都全量索引」的 O(人數 × 專案大小) 成本，變成「CI 一次 + 每人一次解壓」。對於 onboard 新人的體驗，從「等 10 分鐘」變成「等 10 秒」。Fast tier 留給 watcher 的低延遲增量，不在這條策略路徑上。</p>
+
+<h2>深入原理 · artifact 的壓縮管線與「以為 merge=ours 會合併」的誤解</h2>
+<p><code>graph.db.zst</code> 不是簡單的「zip 一個 SQLite 檔」：Best tier 的管線是（1）剝離索引結構，（2）<code>VACUUM INTO</code> 把 DB 壓實成乾淨副本，（3）zstd -9 壓縮，典型 8–13:1；Fast tier 則直接 zstd -3 以換取低延遲。bootstrap 時先做完整性檢查，再解壓、再跑增量索引補上與 artifact 之間的 diff。整個設計刻意避免「整包重新索引」。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：<code>.gitattributes</code> 的 <code>merge=ours</code> 名字裡有「merge」，很多人以為它會「把兩邊的內容合併起來」或「保留對方最新版」。實際上 <code>merge=ours</code> 的意思是：<strong>merge 時永遠保留「我方」（目前分支）的版本</strong>，對方分支對這個檔的變更會被直接丟棄。這對「二進位、無法 diff 的圖快照」是正確的——你永遠要的是 main 上 CI 產的版本，而不是 feature 分支上亂產的版本。誤解它的人會在 feature 分支也手動重產 artifact，結果 merge 後圖反而被舊版覆蓋。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>隊友 bootstrap 後缺某些檔案</td><td>artifact 是較舊 generation，本地新增檔案未被涵蓋</td><td>讓本地 watcher 或一次 index_repository 跑完增量補上</td></tr>
+<tr><td>解壓或完整性檢查失敗</td><td>artifact 由不同 CBM 版本或損壞的 commit 產生</td><td>全員升級到同一版本；刪掉舊 artifact 重新 export</td></tr>
+<tr><td>merge 時 binary 衝突</td><td><code>merge=ours</code> 未寫入 .gitattributes，或路徑規則不符</td><td>確認 .gitattributes 存在且 pattern 正確（如 <code>.codebase-memory/** merge=ours</code>）</td></tr>
+<tr><td>artifact 越推越大</td><td>長期未 VACUUM，或塞入了大量歷史垃圾</td><td>用 Best tier 重新 export（VACUUM INTO 會壓實）</td></tr>
+<tr><td>feature 分支把 artifact 改成舊版</td><td>有人手動在分支上重產了 artifact</td><td>在 CI 只允許 main 產 artifact；教團隊「不要手動產、不要手動 merge artifact」</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>你該用什麼準則決定「commit artifact」還是「把 .codebase-memory/ 丟進 .gitignore」？至少列三個考量因素。</li>
+<li>設計一個 CI workflow：merge 到 main 時自動產出並 commit Best-tier artifact，同時確保不會無限循環觸發。</li>
+<li>解釋為什麼「對方分支重產的 artifact」在 merge=ours 之下會被捨棄——這對團隊的 artifact 版本一致性有什麼好處？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

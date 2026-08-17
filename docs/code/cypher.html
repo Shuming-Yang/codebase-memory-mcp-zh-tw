@@ -108,6 +108,40 @@ trace_path(project="cbm", function_name="cypher_execute", direction="both")</cod
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤一個查詢從 lexer 到 executor 的完整旅程</h2>
+<p>四階段引擎最好的學習方式，是拿一個真實查詢逐層拆解：<code>MATCH (f:Function)-[:CALLS]-&gt;(g) WHERE g.name = 'main' RETURN f.name LIMIT 5</code></p>
+<ol>
+<li><strong>lexer</strong>：<code>search_graph(project="cbm", name_pattern=".*cypher_lex.*", label="Function")</code> 找到 tokenizer——它把字串切成 <code>MATCH</code>、<code>(</code>、<code>f</code>、<code>:</code>、<code>Function</code>、<code>-</code>、<code>[:</code>、<code>CALLS</code>、<code>-&gt;</code>…等 token，處理 label、引號、<code>[*1..3]</code>、<code>=~</code>。</li>
+<li><strong>parser</strong>：<code>search_graph(project="cbm", name_pattern=".*cypher_parse.*", label="Function")</code>——遞迴下降把 token 組合成 AST（pattern 節點/邊、WHERE 條件樹）。子集外的語法（MERGE、comprehension）<strong>在此層就回報 unsupported</strong>。</li>
+<li><strong>planner</strong>：<code>search_graph(project="cbm", name_pattern=".*cypher_plan.*", label="Function")</code>——決定先抓哪個 label 的候選集、filter/join 順序。</li>
+<li><strong>executor</strong>：<code>search_graph(project="cbm", name_pattern=".*cypher_exec.*", label="Function")</code>——對 store 下 SQL、組列、套 aggregate、處理 LIMIT。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：與其背四階段的名詞，不如用「一個查詢在 <code>cypher.c</code> 裡的每一站長什麼樣」來建立直覺。每站對應一組函式，<code>search_graph</code> 直接帶你到原始碼，這比讀整個 4,972 行檔案有效。</p>
+
+<h2>深入原理 · 遞迴下降解析與「以為 unsupported 是執行期才報錯」的誤解</h2>
+<p>parser 是遞迴下降的：pattern、WHERE 條件、aggregates、UNION 各有對應的解析函式，遇到不認識的關鍵字就往「不支援」分支丟。<code>unsupported …</code> 錯誤因此是<strong>編譯期（parse 層）就決定</strong>的，而不是等 executor 跑起來才失敗——所以你在任何查詢之前就能確定「這句寫不寫得過」，錯誤訊息也刻意給得明確（<code>unsupported syntax: MERGE</code> 之類）而不是回空結果。executor 只負責執行「已通過編譯」的計畫。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：有人拿到 <code>unsupported …</code> 後去調整「查詢邏輯」或「資料」——其實問題在<strong>語法層</strong>，與圖內容無關。另一個常見誤解是「<code>WHERE</code> 的寫法順序決定執行順序」——planner 會重新排序（先抓 label 少的候選集），所以你看到「慢的寫法」和「快的寫法」產出相同結果，但效能差很多。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>查詢報 <code>unsupported syntax</code></td><td>用了子集外的關鍵字/語法</td><td>在 parser 層確認支援清單；改寫成唯讀子集</td></tr>
+<tr><td>同樣查詢在不同專案速度差很多</td><td>planner 選的候選集大小不同（label 多寡）</td><td>加更嚴格的 label/WHERE 前置過濾縮小候選集</td></tr>
+<tr><td>結果順序每次不同</td><td>沒寫 ORDER BY，SQL 回傳順序不保證</td><td>加上 ORDER BY 再套 LIMIT</td></tr>
+<tr><td>aggregate 結果不直覺</td><td>count 沒有 DISTINCT，或 join 產生了重複列</td><td>用 <code>count(DISTINCT …)</code> 或先 WITH DISTINCT 再聚合</td></tr>
+<tr><td>自己改 cypher.c 後查詢掛掉</td><td>改了引擎，卻沒跑測試</td><td>跑 <code>scripts/test.sh --suites cypher</code>（本機過 = CI 過）</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>描述「新增一個 <code>reduce()</code> 函式」需要動 lexer/parser/planner/executor 的哪些位置，並指出哪一層最容易被忽略。</li>
+<li>寫出「<code>MATCH (a)-[:CALLS*1..3]-&gt;(b)</code> 中，planner 如何決定先從 a 還是 b 開始展開」的判斷準則。</li>
+<li>解釋為什麼「unsupported 在 parse 層回報」對使用者體驗是加分——對比「靜默回空」的壞處。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

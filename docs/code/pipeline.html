@@ -107,6 +107,41 @@ trace_path(project="cbm", function_name="pipeline_run", direction="outbound")</c
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤一次增量重索引</h2>
+<p>全索引只發生一次；日常運作靠增量。以「我改了一個檔案，圖什麼時候、怎麼更新」為例：</p>
+<ol>
+<li><strong>偵測</strong>：watcher（由 daemon 擁有）用 git polling 偵測到變更，觸發增量重索引。</li>
+<li><strong>範圍</strong>：<code>cbm_pipeline_run()</code> 跑的是「針對變更檔案的抽取 + 合併」，不是重跑全部 pass——<code>search_graph(project="cbm", name_pattern=".*incremental.*", label="Function")</code> 找增量邏輯。</li>
+<li><strong>更新</strong>：變更檔的節點/邊被重新計算、更新到 store；受影響的跨檔邊（如它被誰呼叫）也一併修正。</li>
+<li><strong>落盤</strong>：watcher 的增量用 Fast tier 寫 <code>graph.db.zst</code>（zstd -3）——低延遲、不阻塞。</li>
+<li><strong>查詢一致性</strong>：之後任何查詢都看到新 generation 的圖——所以「改 code 後查詢結果沒變」，通常是 watcher 沒跑（auto_watch false）而不是 pipeline 的問題。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：增量是「索引不必每次全跑」的關鍵，也是效能頁「3 分鐘 kernel」之外的另一半故事。追蹤它，你才能診斷「改了 code 但圖沒更新」這類日常問題。</p>
+
+<h2>深入原理 · RAM-first + 單次 dump + 可取消性</h2>
+<p>pipeline 的生命週期是 <code>cbm_pipeline_new → run → free</code>：new 初始化專案狀態（project name、cache、store 關聯）；run 依 registry 依序跑 pass；free 清理。索引全程在記憶體（LZ4 HC 壓縮讀入 + in-memory SQLite），結束才<strong>單次 dump</strong> 到磁碟，之後記憶體釋放回 OS。可取消性由 <code>cbm_pipeline_cancel()</code> 提供——更新流程要求「所有 process 取消」時，執行中的索引安全停止，不會留下半寫的圖。測試透過 <code>set_before_publish_hook_for_tests</code> 這類鉤子注入可觀察點。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：RAM-first 的「單次 dump」讓很多人以為「索引完成前，之前的圖完全不可用」——但 daemon 的共享 job 系統 + store 的 WAL 模式讓舊圖<strong>在重索引期間仍可查詢</strong>（讀的是舊 generation，索引完成切換到新 generation）。把「重索引」想像成「整段停機」，會對「索引期間查詢為何可用」產生錯誤預期。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>改了 code 圖沒更新</td><td>watcher 未啟用或 git 狀態沒變</td><td><code>config set auto_watch true</code>；確認變更有 commit/stage 或 tracked</td></tr>
+<tr><td>增量後某些舊邊還在</td><td>被刪除的符號的邊未被清理</td><td>跑一次完整 index_repository 做校準</td></tr>
+<tr><td>索引期間查詢很慢</td><td>重索引與查詢競爭資源（讀舊 generation）</td><td>接受暫時慢；或排程在低峰時段跑全索引</td></tr>
+<tr><td>取消索引後圖還是完整的</td><td>可取消性只在 publish 點生效，未完成的 pass 不落盤</td><td>這是設計預期；不用擔心半寫狀態</td></tr>
+<tr><td>測試 hook 影響了正式行為</td><td><code>_for_test</code> 設定殘留在正式環境</td><td>clean build；確認測試鉤子只在測試二進位啟用</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋「RAM-first + 單次 dump」如何支撐「3 分鐘索引 kernel」——對比「逐檔案落盤」的差異。</li>
+<li>設計一個「可取消索引」的測試：啟動索引→觸發取消→驗證圖仍是上一個完整 generation。</li>
+<li>如果一個 pass 失敗，pipeline 該 abort 還是繼續？列出兩種策略的利弊，並說明 CBM 為何選擇容錯。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

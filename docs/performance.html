@@ -112,6 +112,41 @@ query_graph(project="my-project", query="MATCH (f:Function)-[:CALLS]->(g:Functio
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 把 10M LOC 的 monorepo 索引時間壓進 5 分鐘</h2>
+<p>官方的 3 分鐘 kernel 是參考值；你的 monorepo 可能更大或硬體更弱。這裡是一套可重複的調校流程：</p>
+<ol>
+<li><strong>先測基準線</strong>：<code>time codebase-memory-mcp cli index_repository --repo-path /path/to/monorepo</code>——先知道「無腦跑」要多久。</li>
+<li><strong>檢查 worker 數</strong>：先確認機器的 CPU 核心數；若在容器/CI 裡，cgroup 配額可能誤判 worker 數。<code>CBM_WORKERS</code> 手動覆寫成「核心數 × 1.5」做第一次實驗。</li>
+<li><strong>決定模式</strong>：上線初期用 fast 模式拿到可用圖：<code>--mode fast</code>（跳過 similarity/semantic 這類重 pass，換速度）；之後讓 watcher 用增量慢慢補 full 等級的邊。</li>
+<li><strong>設記憶體上限</strong>：大型 repo 需要 <code>CBM_MEM_BUDGET_MB</code>，避免吃到 swap：先設機體 RAM 的 60%，逐步調。</li>
+<li><strong>驗證</strong>：索引完用 <code>index_status</code> 看節點/邊數與 generation，確認沒有悄悄 skip 掉關鍵 pass。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：效能不是「一個參數」，而是「worker × 模式 × 記憶體 × 增量」的組合。先量測再調參，比盲目設 <code>CBM_WORKERS=64</code> 可靠。</p>
+
+<h2>深入原理 · RAM-first 管線的記憶體生命週期與「以為 worker 越多越快」的誤解</h2>
+<p>RAM-first 的意思是：索引全程在記憶體跑，結束才<strong>單次 dump</strong> 到磁碟。具體是：LZ4 HC 壓縮讀入原始檔 → in-memory SQLite（節點/邊先放記憶體）→ 多 pass 管線 → 單次落盤 → 記憶體回歸 OS。平行化由 <code>pass_parallel.c</code> 的 worker pool 提供，<code>pass_parallel</code> 平行的是「逐檔抽取」，聚合與跨檔解析仍是串行的收尾階段。增量更新則靠 watcher 偵測 git 狀態、用 adaptive interval 平衡即時性與資源。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：直覺上「設 <code>CBM_WORKERS=64</code> 一定比 8 快」。但實際上是：worker 數超過 CPU 實體核心後收益遞減，甚至<strong>變慢</strong>——因為記憶體被同時展開的檔案壓縮流吃光，進入 swap；且聚合/合併階段要等所有 worker，worker 太多反而放大同步開銷。正確做法是逐步升到平台值後測量曲線，找「轉折點」而不是「最大數」。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>索引吃光記憶體進 swap</td><td>預設記憶體估算對巨型 repo 失準</td><td>設 <code>CBM_MEM_BUDGET_MB</code> 為機體 RAM 的 50–60%</td></tr>
+<tr><td>worker 沒用滿 CPU</td><td>容器 cgroup 配額被誤判</td><td>用 <code>CBM_WORKERS</code> 手動覆寫偵測值</td></tr>
+<tr><td>第二次跑還是全量時間</td><td>watcher 沒開，增量沒發生</td><td><code>config set auto_watch true</code>；確認 git 狀態有變更</td></tr>
+<tr><td>索引快但查詢卻少邊</td><td>用了 fast 模式，跳過了 similarity/semantic/lsp 精煉</td><td>需要完整邊時用 full/moderate 模式重 index</td></tr>
+<tr><td>懷疑記憶體洩漏</td><td>長時間 daemon 後 RSS 只升不降</td><td><code>CBM_DIAGNOSTICS=1</code> 重開，看 trajectory.ndjson 的記憶體軌跡</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>假設一台 8 核心、32GB RAM 的機器要索引 10M LOC：你依序調整哪三個參數、期望觀察到什麼訊號？（附上你的判斷規則）</li>
+<li>估算一次「5 個結構查詢 vs 逐檔 grep」的 token 消耗比，並列出假設條件——說明為何 99.2% 不是適用在所有場景。</li>
+<li>設計一個微型 benchmark：用同一份 repo 比較「fast 模式」與「full 模式」的索引時間、節點數、查詢延遲，並寫出你會怎麼解讀差異。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

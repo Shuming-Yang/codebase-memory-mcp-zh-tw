@@ -109,6 +109,40 @@ search_graph(project="cbm", name_pattern=".*admission.*", label="Function")</cod
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤一個索引 job 的排程、執行與取消</h2>
+<p>「我下 <code>index_repository</code>，圖就建好了」——中間其實是一個 application job 的生命週期：</p>
+<ol>
+<li><strong>請求進來</strong>：MCP session 對 daemon 發「幫我索引 X」（<code>cbm_daemon_ipc_*</code> 走 IPC frame）。</li>
+<li><strong>排程</strong>：<code>application.c</code> 的 <code>cbm_daemon_application_*</code> 把它排成 job——有物理上限與 busy queue；<code>search_graph(project="cbm", name_pattern=".*application_job.*", label="Function")</code> 找到它。</li>
+<li><strong>執行</strong>：job 跑到 runtime（<code>runtime.c</code> 管 worker/process 生命週期），對 pipeline 發起索引，per-project lock（<code>project_lock.c</code>）保證同專案不會並行寫入。</li>
+<li><strong>取消</strong>：如果 update 流程要替換二進位，會觸發 activation——daemon 取消執行中的 job（<code>cbm_pipeline_cancel</code>），等安全停止後才換 binary。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：這個流程橫跨 ipc → application → runtime → pipeline 四個元件。追蹤它，你才理解「索引」不是 mcp 直接做的事，而是 daemon 管理的共享資源——這正是「一帳號一 daemon」架構的實際價值所在。</p>
+
+<h2>深入原理 · IPC 抽象與「以為 daemon 是單執行緒」的誤解</h2>
+<p>daemon 的 IPC 層（<code>ipc.c</code>）封裝了三件事：endpoint 位址（session 與 daemon 怎麼找到彼此）、frame 收送（訊息的包裝）、lifetime reservation / startup gate（session 註冊與同步啟動）。平台差異（POSIX socket vs Windows named pipe 等）被抽在 <code>ipc_*</code> 相關檔案裡。測試透過 <code>_for_test()</code> 鉤子注入失敗/延遲，驗證「job 卡住時系統會怎樣」。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：看「daemon」兩個字，有人以為它是「一個負責所有事情的單一執行緒」，於是推斷「多 session 同時索引會互相卡死」。實際上 daemon 內部有 runtime worker 與 job 排程，索引請求是<strong>排程的 job</strong>（有 busy queue），不是直接串行執行；而 per-project lock 只序列化「同一專案」的寫入，不同專案可以平行。把「單一 daemon process」誤解成「單一執行緒」，會對並行能力做出錯誤預測。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>索引請求排不到</td><td>application job 物理上限滿或 busy queue 積壓</td><td>等前面的 job 完成；或用 CLI 直接索引（走 per-project lock 佇列）</td></tr>
+<tr><td>取消沒生效</td><td>取消是非同步的，job 需要到可取消點才停止</td><td>稍候再查 job 狀態；確認沒有殘留寫入</td></tr>
+<tr><td>同專案兩個 session 都卡在等待</td><td>per-project lock 互等（設計預期）</td><td>確認是否真的需要並行；等待是正常行為，不會死鎖</td></tr>
+<tr><td>IPC 連不上 daemon</td><td>endpoint 失效或 daemon 已死</td><td>看 cbm-daemon.log；必要時清理失效的 endpoint/lock</td></tr>
+<tr><td>測試環境下 job 行為不穩定</td><td>測試注入的失敗/延遲鉤子在作用</td><td>檢查是否有 <code>_for_test</code> 設定殘留；clean build 再跑</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋 per-project lock 如何「序列化同專案寫入」而「允許跨專案平行」——這對多 session 協作的並行能力有何意義？</li>
+<li>設計一個崩潰復原測試：daemon 在索引中途被 kill，如何驗證「圖不會留下半寫狀態」？</li>
+<li>「lifetime reservation」與「startup gate」各解決什麼問題？如果缺了它們會發生什麼？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

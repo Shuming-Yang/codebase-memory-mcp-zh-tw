@@ -97,6 +97,40 @@ open http://localhost:9749
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤 UI 的資料從 store 到 three.js</h2>
+<p>你在瀏覽器看到 3D 圖，資料是怎麼流過去的？以「開啟 <code>--ui</code>、瀏覽一個專案」為例：</p>
+<ol>
+<li><strong>啟動</strong>：<code>codebase-memory-mcp --ui</code> 啟動嵌入式 HTTP server（<code>httpd.c</code> / <code>http_server.c</code>，第一方實作、無第三方 HTTP library）於 <code>localhost:9749</code>——UI 由共享 daemon 擁有，並行 session 不會開重複 server。</li>
+<li><strong>前端載入</strong>：瀏覽器請求前端 bundle——它<strong>編譯進二進位</strong>（<code>embedded_assets.h</code>，<code>graph-ui/</code> 的 React + three.js build）。</li>
+<li><strong>資料 API</strong>：前端向 <code>httpd</code> 要圖資料（節點/邊/社群、搜尋）——<code>search_code(project="cbm", pattern="/api/")</code> 找這些 endpoint。</li>
+<li><strong>3D 座標</strong>：節點的初始 3D 座標由 <strong>C 側 <code>layout3d.c</code> 預先算好</strong>，前端直接吃座標做 physics 渲染——跨 repo 時用 multi-galaxy 佈局呈現不同 repo 的「星系」。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：UI 不是「另一個獨立 app」，而是「一個編進二進位的嵌入式 server + 內建前端」。追蹤這條資料流，你才能診斷「白屏 / 資料不顯示 / 佈局怪異」這類問題該往哪層找。</p>
+
+<h2>深入原理 · 嵌入資產與 lean/ui 兩種 build</h2>
+<p>前端是 React + three.js，但<strong>被編譯成靜態資產嵌進二進位</strong>（<code>embedded_assets.h</code>）——所以 CBM 單一二進位就能提供完整 UI，不必在目標機上另裝 node_modules。<code>config.c</code> 管 <code>ui_enabled</code> / <code>ui_port</code>（存在 cache 的 config.json）。<code>--with-ui</code> 的完整 build 嵌入前端；lean build 用 <code>embedded_stub.c</code> 頂替（沒有 UI 但有全部 CLI/MCP 功能）。3D 佈局分兩段：C 側算初始力導向座標（<code>layout3d.c</code>），前端跑互動 physics。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人以為「3D 渲染與佈局全是前端 three.js 算的」，於是調整 UI 問題時全在瀏覽器 devtools 裡找。實際上<strong>初始座標由 C 側預算</strong>——節點「一開始長在哪」由 <code>layout3d.c</code> 決定，前端只負責物理模擬與渲染。所以「佈局很奇怪」或「跨 repo 星系沒分開」這類問題，可能要改 C 側的佈局邏輯，而不是前端 CSS。另一個常見誤解：lean build 跑 <code>--ui</code> 沒反應，被當成「bug」——其實是該 build 沒有嵌入 assets（<code>embedded_stub</code>），屬於預期行為。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td><code>--ui</code> 啟動後白屏</td><td>lean build 未嵌入前端 assets</td><td>用 <code>--with-ui</code> build 或官方 release</td></tr>
+<tr><td>port 9749 被佔用</td><td>另一個 process 佔住</td><td>改 <code>ui_port</code>；或關閉佔用程序</td></tr>
+<tr><td>UI 卡頓</td><td>節點數過多，前端渲染過載</td><td>用社群聚合檢視；或縮小檢視範圍（filter by label）</td></tr>
+<tr><td>跨 repo 沒分開成星系</td><td>multi-galaxy 佈局依賴跨 repo 節點資料</td><td>確認多個 project 有 index 進同一 cache；重開 UI</td></tr>
+<tr><td>UI 連不到 daemon</td><td>daemon 沒跑或 endpoint 失效</td><td>先啟動一個 session 讓 daemon 起來，再開 UI</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋「前端編譯進二進位（embedded_assets.h）」對部署的意義——對比「另外用 npm 部署前端」的做法。</li>
+<li>設計一個 multi-galaxy 佈局：假設 3 個 repo，你怎麼決定「哪些節點分到哪個星系、星系間怎麼擺」？</li>
+<li>「C 側預算初始座標、前端跑 physics」的分工，對「大圖效能」的意義是什麼？如果把全部分散到前端會怎樣？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

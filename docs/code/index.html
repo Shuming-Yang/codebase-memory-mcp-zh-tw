@@ -76,6 +76,40 @@
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 用知識圖譜導航 CBM 源碼——追蹤 auto_index</h2>
+<p>閱讀順序是「線性」的；但「某個功能從入口到落地」的路徑是<strong>跨模組</strong>的。以「新 session 連線時自動索引」（auto_index）為例，用 CBM 自己導航自己：</p>
+<ol>
+<li><strong>找 config 的開關</strong>：<code>search_graph(project="cbm", query="auto_index config", label="Function")</code>——先在 cli/config 相關函式裡找到 <code>auto_index</code> 的讀取點。</li>
+<li><strong>找 MCP 層的觸發</strong>：<code>search_graph(project="cbm", name_pattern=".*auto_index.*", label="Function")</code>——mcp.c 裡 session 初始化會檢查該設定。</li>
+<li><strong>跨模組追蹤</strong>：<code>trace_path(function_name="cbm_mcp_auto_index", direction="outbound")</code>——看它怎麼把索引請求丟給 daemon 的 application job。</li>
+<li><strong>落地到 pipeline</strong>：<code>trace_path(function_name="cbm_pipeline_run", direction="outbound")</code>——最後是 pipeline 的 pass 串。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：auto_index 這個功能跨越 cli（設定）→ mcp（觸發）→ daemon（排程）→ pipeline（執行）四個模組。用 <code>search_graph</code> 找起點、<code>trace_path</code> 沿 CALLS 邊跨檔走，比人工在 13 萬行 C 裡跳轉快得多——這正是「用圖導航大型 C codebase」的實戰示範。</p>
+
+<h2>深入原理 · 單一二進位 + arena 記憶體 + 可測試性鉤子</h2>
+<p>讀 CBM 源碼前，先建立三個背景知識：（1）<strong>單一靜態二進位</strong>——所有模組編進一個 binary，<code>main()</code> 依參數分派，無 companion executable；（2）<strong>foundation/ 的平台抽象</strong>——arena 記憶體（批次分配、批次釋放，配合 RAM-first 管線）、執行緒、檔案系統、regex 都被抽象化，所以測試可以注入 fake；（3）<strong>可測試性設計</strong>——大量函式有 <code>_for_test()</code> 鉤子（如 <code>set_before_publish_hook_for_tests</code>），讓測試能注入失敗/延遲。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：在大型 C 專案裡用 <code>search_graph(name_pattern=".*parse.*")</code> 搜「parse」，會回傳幾十個 <code>parse_*</code> 函式（JSON parse、Cypher parse、AST parse…）。很多人直接抓第一個就往下追，結果追錯檔案。正確做法是<strong>同時用 label + file_pattern 縮小</strong>（如 <code>file_pattern="src/cypher"</code>），並用 <code>get_code_snippet</code> 確認 qualified name 的 path_parts——「搜到函式」不等於「搜到你要的那個函式」。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>search_graph 回傳太多同名函式</td><td>沒帶 label 與 file_pattern</td><td>加 <code>label=Function</code> + <code>file_pattern</code> 縮小範圍</td></tr>
+<tr><td>trace_path 追到一半斷掉</td><td>該語言（或該模式）解析 fallback 到 USAGE</td><td>斷點處改查 USAGE/CALL_REFERENCE，或讀 get_code_snippet 人工接</td></tr>
+<tr><td>行數對不上文件</td><td>你的 checkout 與對齊版 main@2c50c77 不同</td><td>切到對應 commit 再看行數</td></tr>
+<tr><td>找不到 auto_index 相關函式</td><td>名稱不是 auto_index 開頭（可能是 mcp.c 內部 static）</td><td>用 query 全文搜尋（BM25）而非 name_pattern</td></tr>
+<tr><td>讀到一半不知這函式被誰用</td><td>只做了 outbound 追蹤</td><td>補 <code>trace_path(direction="inbound")</code> 看 caller</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>追蹤「<code>cli search_graph</code> 從 main() 到 store 的完整路徑」——把每一跳的函式名寫出來。</li>
+<li>用 <code>get_code_snippet</code> 讀 <code>cbm_pipeline_run</code> 的開頭，說明它如何初始化 pipeline 並決定跑哪些 pass。</li>
+<li>解釋 <code>_for_test()</code> 鉤子如何讓「注入失敗」成為可能——這對 6,768 個測試的意義是什麼？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

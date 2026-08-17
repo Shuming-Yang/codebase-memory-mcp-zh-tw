@@ -104,6 +104,40 @@ trace_path(project="cbm", function_name="main", direction="outbound")</code></pr
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 除錯「MCP client 收到混亂輸出」</h2>
+<p>MCP 是 stdio 協議，stdout 只能有 JSON-RPC。如果你的 agent 一直報「protocol error / parse failure」，這條路徑幫你定位：</p>
+<ol>
+<li><strong>先確認 stdout 是不是真的髒了</strong>：<code>codebase-memory-mcp 2>/dev/null | head -c 500</code>——若出現日誌文字而非 JSON-RPC，就是 log 沒走對通道。</li>
+<li><strong>檢查 log 路由</strong>：main.c 把日誌導向 <code>stderr</code>（session 層）或 <code>${CBM_CACHE_DIR}/logs/cbm-daemon.log</code>（daemon 層）——兩個地方都不該碰 stdout。</li>
+<li><strong>檢查是不是 CLI 模式在搞鬼</strong>：CLI 模式的 <code>--progress</code> 只寫 stderr、stdout 保持機器可讀；確認你的 script 沒有把 stderr 併進 stdout（<code>2>&1</code> 是常見元兇）。</li>
+<li><strong>確認 daemon 連線正常</strong>：MCP 模式會啟動或連上 daemon；若 daemon 啟動失敗，log 會漏到錯誤地方。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：「stdout 乾淨」是 MCP 的生存條件——混入一行日誌，整個 JSON-RPC 串流就壞了。這條路徑教你先把「輸出通道」和「log 通道」分開診斷，而不是去懷疑查詢邏輯。</p>
+
+<h2>深入原理 · 單一二進位的分派與「以為 CLI 模式會啟動 daemon」的誤解</h2>
+<p>main() 開頭做平台初始化（記憶體/log/threads），然後依 argv[1] 分派：無參數或 <code>stdio</code> → MCP server；<code>cli</code> → 單次指令（<strong>不啟動 daemon、不留常駐 process</strong>）；<code>install/update/uninstall/config</code> → cli.c；<code>--ui=true</code> → 3D UI。這一切都是<strong>單一靜態二進位</strong>——沒有 companion executable，所有模組編在一起。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：<code>cli</code> 指令執行時，log 也走 stderr——但很多人用 <code>cli search_graph 2>&1 | jq</code> 這類寫法把 stderr 併入，結果 JSON 前面多了一堆 log 行，<code>jq</code> 直接掛掉。這不是 CBM 的 bug，而是「<code>2>&1</code> 破壞了 stdout/stderr 分離」的慣用寫法問題。另一種誤解是「CLI 模式與 MCP 模式共用同一份圖資料，所以 CLI 跑完 MCP 一定看得到」——它們共享 SQLite 與 per-project lock，但 CLI 不會觸發 watcher，所以你 CLI 手動改了 repo，MCP 側要等 watcher 增量才看到新圖。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>agent 收到 protocol error</td><td>stdout 混入日誌（多半是 <code>2>&1</code> 或錯誤的 log 設定）</td><td>確認 log 走 stderr/daemon log；別把 stderr 併進 stdout</td></tr>
+<tr><td><code>--ui=true</code> 沒反應</td><td>你的 build 是不帶 UI 的 lean build（embedded_stub）</td><td>用 <code>--with-ui</code> 重 build，或用官方 release</td></tr>
+<tr><td>CLI 指令立刻結束、查不到圖</td><td>CLI 不啟動 watcher，圖是上次索引的狀態</td><td>先跑一次 index_repository，再查詢</td></tr>
+<tr><td>分派到錯的模式</td><td>argv[1] 拼錯（如 <code>cli</code> 打成 <code>cl</code>）</td><td>確認參數拼法；<code>codebase-memory-mcp --help</code> 看用法</td></tr>
+<tr><td>log 全跑到 console 沒進 daemon log</td><td>session 層 log 與 daemon 層 log 的歸屬沒分清楚</td><td>session 層看 stderr，daemon 層看 <code>CBM_CACHE_DIR/logs/</code></td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋「stdout 只能有 JSON-RPC」對 MCP 協議的意義——如果違反，client 端會發生什麼（用協議解析的視角）。</li>
+<li>設計一個分派測試：給定不同的 argv[1]，驗證 main() 進入正確的模式（參照 test_main 風格）。</li>
+<li>「CLI 模式不啟動 watcher」這個設計決策，對「CI 腳本裡跑 cli 查詢」的情境有什麼影響？你會怎麼在 CI 裡保證圖是新鮮的？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

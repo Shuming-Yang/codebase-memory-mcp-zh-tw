@@ -116,6 +116,41 @@ CBM_DIAGNOSTICS=1 codebase-memory-mcp cli index_repository --repo-path ~/project
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 在共用 CI runner / 多租戶環境的安全硬化</h2>
+<p>個人筆電上的安全，和「共用 CI runner 或多人共用的機器」上的安全，是兩個等級。後者的實戰流程：</p>
+<ol>
+<li><strong>限制可索引範圍</strong>：設 <code>CBM_ALLOWED_ROOT=/workspace/projects</code>——把 <code>index_repository</code> 限制在此目錄內，防止未被信任的呼叫者把任意路徑塞進來。多租戶部署尤其需要。</li>
+<li><strong>驗證 artifact / 二進位來源</strong>：<code>sha256sum -c checksums.txt</code> + <code>gh attestation verify</code>（SLSA3 provenance）+ cosign 驗證——三層獨立來源信任，缺一不可。</li>
+<li><strong>最小化設定面</strong>：installer 原則上「絕不翻開實驗性 flag、不啟用 plugin、不做 global permission bypass、不信任第三方指令」——部署時也一樣，別手動加寬。</li>
+<li><strong>出問題時自己抓診斷</strong>：共用環境出了無法重現的問題，設 <code>CBM_DIAGNOSTICS=1</code> 後重開 daemon session，蒐集 <code>trajectory.ndjson</code>（每 5 秒一行記憶體/查詢軌跡）回報。診斷目錄用隨機名稱，避免其他帳號預置惡意連結。</li>
+<li><strong>審計清單</strong>：把「零 runtime 依賴、無 telemetry、embedding 模型編進二進位」寫進團隊的安全準則，讓所有人知道沒有隱藏外傳。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：共用環境最怕兩件事——（1）工具能碰它不該碰的目錄，（2）團隊無法驗證自己跑的是不是真的官方二進位。前者靠 <code>CBM_ALLOWED_ROOT</code>，後者靠 checksum + provenance + cosign 三層驗證。診斷流程則彌補「無 telemetry」的短板：不偷傳資料，但出事時給你抓資料的方法。</p>
+
+<h2>深入原理 · Supply chain 管線與「以為驗證 checksum 就夠了」的誤解</h2>
+<p>CBM 的供應鏈防護是六層：VirusTotal（70+ 引擎零偵測才發布）→ SLSA Level 3（GitHub Actions 產生的加密建置來源證明）→ cosign keyless 簽章 → SHA-256 checksums → CodeQL SAST 擋 release → 零 runtime 依賴（所有函式庫編譯時 vendored）。embedding 模型（nomic-embed-code，768d int8）也編譯進二進位，所以語意搜尋不需要 API key / Ollama / Docker，也不會為此外傳任何東西。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人驗完 <code>sha256sum -c</code> 就覺得「來源可信」。但 checksum 只證明「<strong>你拿到的和發布者算的一致</strong>」——如果發布者被入侵、或有人偽造了 checksums.txt 與二進位的組合，checksum 驗證照樣過。要證明「這真的是 DeusData 官方建置」，必須驗 <strong>SLSA provenance 與 cosign 簽章</strong>（<code>gh attestation verify</code>）——那是綁定到 GitHub 身分的加密證據。三層都要驗，不是驗一層。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>checksum 驗證失敗</td><td>下載不完整或被竄改</td><td>重新下載並重驗；仍失敗就從官方 release 頁換鏡像</td></tr>
+<tr><td><code>gh attestation verify</code> 失敗</td><td>gh CLI 未登入、版本過舊、或 network 到 GitHub 受限</td><td><code>gh auth login</code>、升級 gh、或改用 cosign CLI 驗證</td></tr>
+<tr><td>診斷 log 沒產生</td><td><code>CBM_DIAGNOSTICS</code> 在 daemon 啟動前未設定</td><td>關閉所有 session，設定環境變數後重新啟動再觸發</td></tr>
+<tr><td>索引 <code>CBM_ALLOWED_ROOT</code> 之外的目錄被拒</td><td>這是預期行為（限制生效）</td><td>調整 <code>CBM_ALLOWED_ROOT</code> 範圍，或改用被允許的目錄</td></tr>
+<tr><td>「無 telemetry」卻看到對外連線</td><td>可能是其他工具的請求，或被誤判</td><td>用 lsof/網路監控確認來源 process；CBM 本身不發網路請求</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>設計一份「CBM 供應鏈審計 checklist」，涵蓋下載、驗證、安裝、執行四個階段，每階段至少三項檢查。</li>
+<li>解釋「checksum 驗證通過」與「來源可信」之間還缺哪一環，以及 SLSA/cosign 如何補上。</li>
+<li>在多租戶 CI runner 上，<code>CBM_ALLOWED_ROOT</code> 能防什麼、不能防什麼？（列出至少一個防得住的和一個防不住的威脅）</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

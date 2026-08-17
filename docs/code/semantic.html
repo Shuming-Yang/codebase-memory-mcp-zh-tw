@@ -98,6 +98,40 @@ search_graph(project="cbm", name_pattern=".*minhash.*", label="Function")</code>
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 除錯「語意搜尋回傳不直覺的結果」</h2>
+<p>你問「找出所有負責重試的函式」，結果第一頁全是無關的 <code>retry_count</code> 變數。這條路徑幫你把語意搜尋變可靠：</p>
+<ol>
+<li><strong>確認 embedding 模型有載入</strong>：nomic-embed-code（768d int8）編譯進二進位——確認你的 build 不是跳過 semantic 的 lean 版（<code>search_code(project="cbm", pattern="nomic")</code> 找載入處）。</li>
+<li><strong>理解計分不是單一距離</strong>：結果是 <strong>11-signal 組合</strong>（TF-IDF、RRI、API/Type/Decorator signatures、AST profile、data flow、Halstead-lite、MinHash、module proximity、graph diffusion 等加權）——<code>search_graph(project="cbm", name_pattern=".*signal.*", label="Function")</code> 找計分函式。</li>
+<li><strong>換關鍵字策略</strong>：純 token 相似度會被「同名不同義」帶偏；試著在查詢裡混入「結構特徵詞」（例如「帶 sleep 的重試」）讓 AST profile / data flow 訊號介入。</li>
+<li><strong>用 cross-check 收斂</strong>：把語意結果與 <code>search_graph</code> / <code>search_code</code> 的結果對照——三個工具的「相關」定義不同，交集往往是真正目標。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：語意搜尋「不直覺」多半不是壞了，而是你誤以為它是「關鍵字搜尋的智慧版」。理解 11-signal 架構後，你能透過「餵結構特徵詞」和「多工具交集」把召回率從「碰運氣」變成「可控制」。</p>
+
+<h2>深入原理 · 11-signal 計分與「以為語意搜尋 = 純向量距離」的誤解</h2>
+<p>很多人看到「embedding 模型」就以為 <code>semantic_query</code> 是「查詢 embedding 與節點 embedding 比餘弦距離，取 top-k」。實際架構是<strong>多訊號加權合成</strong>：詞彙訊號（TF-IDF）、結構訊號（AST profile 把巢狀/呼叫數/參數模式編成特徵）、語意訊號（embedding 相似度）、關係訊號（graph diffusion、module proximity）等共 11 種，各自加權後合出分數。ROTSQ 提供另一種「詞彙完全不同但做的事一樣」的訊號。這正是「語意搜尋能跨詞彙」而「關鍵字搜尋不行」的關鍵——<code>semantic_query</code> 工具用的就是這套。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：正因為有 embedding，很多人斷言「語意搜尋需要 API key / 會外傳 code」——但模型是<strong>編譯進二進位的</strong>（nomic-embed-code，768d int8），100% 本機推理、零外傳。另一個誤解是「分數越高代表越相關」——11-signal 是加權合成，不同專案的最佳權重可能不同，所以「高分」可能被「詞彙訊號」單獨拉高，而「結構訊號」完全缺席。把「高分」當「絕對相關」是常見誤用。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>語意搜尋回傳大量無關結果</td><td>詞彙訊號權重過高，結構訊號未介入</td><td>在查詢中加入結構特徵詞；用 search_graph 做交集驗證</td></tr>
+<tr><td>語意搜尋很慢</td><td>embedding 推理 + 多訊號計算密集</td><td>確認 build 含模型；縮小搜尋範圍（label/file 過濾）</td></tr>
+<tr><td>沒有 SIMILAR_TO 邊</td><td>similarity pass 未跑（fast 模式）或 minhash 門檻過高</td><td>full/moderate 重 index；調門檻</td></tr>
+<tr><td>「詞彙完全不同但功能相同」找不到</td><td>AST profile/ROTSQ 訊號權重不足</td><td>調整查詢措辭描述行為；或改用 ROTSQ 相關的查詢模式</td></tr>
+<tr><td>不同版本結果差異大</td><td>模型或權重在版本間有更新</td><td>鎖定版本；重要結論附版本標註</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋 11-signal 架構如何讓語意搜尋「跨詞彙」——相較於單一 embedding 距離，它多捕捉了哪些面向？</li>
+<li>設計一個實驗：同一查詢在「含結構詞」與「不含結構詞」兩種寫法下比較結果，判斷結構訊號對召回率的影響。</li>
+<li>「embedding 模型編譯進二進位」帶來哪三項具體好處（安全/部署/成本）？列出並說明。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

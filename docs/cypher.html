@@ -148,6 +148,40 @@ ORDER BY depth</code></pre>
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 找出扇入熱點與循環依賴</h2>
+<p>死碼偵測是「找沒人用」；現在反過來——找「太多人用、改了會炸」的熱點，以及「A 呼叫 B、B 又呼叫 A」的結構壞味道。</p>
+<ol>
+<li><strong>找出扇入（fan-in）最高的函式</strong>：<code>MATCH (callee:Function)&lt;-[:CALLS]-(caller) RETURN callee.name, callee.file_path, count(caller) AS fan_in ORDER BY fan_in DESC LIMIT 10</code>——這些就是變更風險最高的「上帝函式」。</li>
+<li><strong>找出扇出（fan-out）最高的函式</strong>：<code>MATCH (f:Function)-[:CALLS]->(g) RETURN f.name, count(g) AS fan_out ORDER BY fan_out DESC LIMIT 10</code>——這些是「職責過載」的候選。</li>
+<li><strong>找 2-hop 循環</strong>：<code>MATCH (a:Function)-[:CALLS]->(b:Function)-[:CALLS]->(a) RETURN DISTINCT a.name, b.name</code>。</li>
+<li><strong>把結果送進 <code>get_code_snippet</code></strong> 逐一確認，判斷是否真的需要重構。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：變更風險管理不能靠「感覺」。fan-in 查詢把「誰依賴這個函式」量化成可排序的數字；循環依賴查詢則抓到 grep 看不到的結構性問題。兩者都是用<strong>唯讀子集內可表達的查詢</strong>完成，不必動用到分析工具之外的任何外掛。</p>
+
+<h2>深入原理 · Cypher 引擎的四階段與「以為 EXISTS 是子查詢」的誤解</h2>
+<p><code>query_graph</code> 不是把 Cypher 丟給資料庫，而是在 <code>cypher.c</code> 裡自己走完<strong>lexer → parser → planner → executor</strong>：lexer 把字串切 token（label、<code>[*1..3]</code>、<code>=~</code> 都要辨識）；parser 用遞迴下降建 AST；planner 決定執行順序（先抓 label 數少的候選集，再做 join/filter）；executor 對 store 下 SQL、套 aggregate、處理 ORDER BY/SKIP/LIMIT/UNION。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人把 <code>EXISTS { (f)&lt;-[:CALLS]-() }</code> 理解成 Neo4j 的「correlated subquery（相關子查詢）」。但 CBM 的實作把它編譯成<strong>單跳存在性檢查</strong>——它驗證的是「有沒有任何一條 inbound CALLS 邊」，而不是「子查詢完整執行後回傳非空」。這在絕大多數死碼查詢上行為一致，但若你寫的是 <code>EXISTS { (f)-[:CALLS*1..3]->(x) }</code> 這種多跳語意，或期望子查詢內部的過濾條件被精確求值，就會得到「看似合理但其實與你想像不同」的結果。同理，<code>WHERE</code> 的執行順序由 planner 決定，不代表你寫的順序。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>查詢要數秒才回</td><td>無 label 過濾的全圖掃描，或 <code>[*0..]</code> 無界展開</td><td>加 label 條件，把變數長度路徑改成有界（如 <code>[*1..3]</code>）</td></tr>
+<tr><td><code>unsupported …</code> 錯誤</td><td>用了子集外的語法（MERGE、comprehension、parameter）</td><td>查本頁支援的 Clause/Function 表，改寫成唯讀子集</td></tr>
+<tr><td>回傳空，但 grep 明明找得到該呼叫</td><td>該語言解析 fallback 到 <code>USAGE</code>/<code>CALL_REFERENCE</code>，沒有 <code>CALLS</code> 邊</td><td>改用 <code>search_graph</code> 或把邊型換成 <code>USAGE</code> 再查</td></tr>
+<tr><td>同一查詢兩次結果不同</td><td>兩次之間 watcher 做了增量重索引（generation 變了）</td><td>先確認索引狀態再下結論；查詢附上索引 generation 標註</td></tr>
+<tr><td>DISTINCT 後結果仍重複</td><td>同一個函式被多個邊命中，屬性不同（不同 file_path）</td><td>RETURN 需要的屬性欄位，用 collect() 聚合檢視</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>寫一條查詢，找出「在 <code>src/api</code> 之下、被呼叫次數超過 5 次」的函式，並解釋為什麼要先過濾 label 再算 count。</li>
+<li>寫一條查詢找「存在 2-hop 循環」的函式對；接著說明要偵測「N-hop 循環」時，為何 <code>[*1..N]</code> 會讓結果暴增。</li>
+<li>解釋 <code>EXISTS { … }</code> 與「correlated subquery」在 CBM 實作上的差異，以及這個差異會在什麼樣的路徑模式上露出破綻。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

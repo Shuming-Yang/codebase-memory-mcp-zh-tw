@@ -116,6 +116,41 @@ trace_path(project="cbm", function_name="install_hooks", direction="outbound")</
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 診斷「更新後 hooks 失效」</h2>
+<p>前面追蹤過 install 流程；現在反過來——功能壞了要怎麼診斷。情境：更新 CBM 後，某個平台的 hooks 不再把圖符號注入 context：</p>
+<ol>
+<li><strong>先查 config 現況</strong>：<code>codebase-memory-mcp config list</code>——確認 auto_index / auto_watch 等設定沒有被更新流程動到。</li>
+<li><strong>檢查 hooks 檔案</strong>：找到該平台的 config（如 <code>~/.claude.json</code>），確認 hook 定義還在、路徑指向的 CBM 二進位是否存在。</li>
+<li><strong>檢查版本一致性</strong>：<code>codebase-memory-mcp --version</code> + <code>cat ~/.cache/codebase-memory-mcp/logs/activation-events.ndjson</code>——確認你跑的是不是新版本、activation 是否成功。</li>
+<li><strong>重跑 install 做 migration</strong>：<code>codebase-memory-mcp install</code>——migration 只覆寫 byte-identical 的先前定義；如果你的 hooks 被手動改過，它不會動它（這可能是「失效」的真相：版本格式變了但舊定義沒被更新）。</li>
+<li><strong>驗證</strong>：在 agent 裡觸發一次 Grep，確認 hook 是否注入 <code>additionalContext</code>。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：更新後「某個功能失效」的診斷，核心是<strong>分離「版本問題」與「設定問題」</strong>。先查 config（設定層），再查 activation（版本層），最後靠 migration 規則推斷「是不是我的定義被改過」。這條路徑避免了你直接刪掉設定重裝——那會丟掉你手動的客製化。</p>
+
+<h2>深入原理 · Installer 的寫入模型與「以為 re-install 會重置一切」的誤解</h2>
+<p><code>cli.c</code> 的安裝是資料導向的：每個平台有一份描述（config 寫入位置 + context 檔 + skill + hooks）。<code>install.sh</code> 是 idempotent（重跑就是更新）。更新流程刻意不做 in-process updater——因為「下載 + 解壓 + 標記執行 + 執行」正是 dropper 特徵，防毒軟體會警戒；Windows 上執行中的 exe 也無法自我替換。config 存在 <code>${CBM_CACHE_DIR}/_config.db</code>（SQLite）。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人以為「re-run install 會把我的設定重置回預設」，所以更新後出問題不敢重跑。實際上 migration 的規則是<strong>只覆寫 byte-identical 的先前定義</strong>——只有「跟上一次我們寫的一模一樣」的檔案才會被換新；你手動改過的部分會被保留。所以「重跑 install」在大部分情況是安全且被推薦的補救手段，它不會抹掉你的客製化。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>install 對某平台完全沒寫入</td><td>該平台是 conditional，config 路徑不存在</td><td>先安裝並使用該平台，再重跑 install</td></tr>
+<tr><td>update 只印了一行指令</td><td>設計如此——update 不做 in-process 替換</td><td>照印出的指令重跑 install.sh（idempotent）</td></tr>
+<tr><td>config set 不生效</td><td>你改了 <code>CBM_CACHE_DIR</code>，讀到另一份 _config.db</td><td>確認 cache root 一致，再重跑 config list 驗證</td></tr>
+<tr><td>更新後 hooks 沒注入 context</td><td>舊定義與新版格式不符，且你的定義被改過（非 byte-identical）</td><td>還原定義或手動套用新格式後重跑 install</td></tr>
+<tr><td>Windows 上更新失敗</td><td>執行中的 exe 無法自我替換</td><td>關閉所有 process 後，由外部 install.sh 完成替換</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋「in-process updater」的 dropper 特徵是什麼——為什麼把它當成安全設計決策而非只是「懶得做」？</li>
+<li>設計一個 install 的測試：如何驗證「conditional 平台在 config 不存在時不會被寫入、存在時才會」？（可參考 tests/ 的 test_cli.c 風格）</li>
+<li>「migration 只覆寫 byte-identical 定義」這條規則，對「使用者客製化」與「官方更新」兩者分別的利弊是什麼？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

@@ -118,6 +118,40 @@ trace_path(project="cbm", function_name="cbm_store_close", direction="inbound")<
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤 trace_path 的 BFS 為何能在 10ms 內完成</h2>
+<p>「<code>trace_path</code> 深度 5 的 BFS 只要 <10ms」——這不是魔法，而是 SQL 批次技巧：</p>
+<ol>
+<li><strong>起點</strong>：先解析 <code>function_name</code> 找到起點節點（SQL 精確查詢，indexed）。</li>
+<li><strong>逐層擴張</strong>：每一層的「當前節點集合」轉成一個 <code>WHERE source IN (…)</code> 的 SQL——<code>search_code(project="cbm", pattern="WHERE source IN")</code> 找到這個關鍵查詢。</li>
+<li><strong>為什麼快</strong>：不是「逐一節點查詢」而是「一批一查」——5 層頂多 5 次 SQL，配合邊表的 index（source/target/type），每次回傳下一層的節點集合。深度限制（1–5）就是這裡執行的。</li>
+<li><strong>方向</strong>：inbound/outbound/both 只是 SQL 條件的方向差別（source→target 或反之）。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：效能數字（<10ms）背後是具體的資料結構選擇。追蹤「批次 SQL」這個細節，你就能回答「為什麼深度 10 會慢下來」以及「為什麼深度限制是 5」——這比背數字有用。</p>
+
+<h2>深入原理 · SQLite 正規化 + FTS5 自訂 tokenizer + Louvain</h2>
+<p>store 是 SQLite：節點表、邊表、屬性表（JSON 屬性），WAL 模式 ACID。搜尋走 <strong>FTS5</strong> 全文索引，配自訂 <code>cbm_camel_split</code> tokenizer——它認得 camelCase / snake_case，讓 <code>ProcessOrder</code> 能被 <code>process order</code> 或 <code>process_order</code> 搜到。Louvain 社群偵測是<strong>應用層演算法</strong>：只看 CALLS 邊的密度，把「一起工作的函式」聚成功能模組（get_architecture 的 cluster 來源）。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：看到「圖資料庫」四個字，很多人假設 store 是某種「原生圖引擎（如 Neo4j）」——於是推斷「查詢延遲與 SQLite 無關、或 store 能做任意圖演算法」。實際上 <strong>store 是 SQL 正規化表格</strong>，圖的語意（遍歷、分群）由 C 側應用層實作。這代表：不是所有圖演算法都免費——Louvain、BFS 是<strong>針對性優化過的少數幾種</strong>；「任意深度不受限的查詢」會慢，不是 bug，而是「SQL 正規化 + 應用層遍歷」的結構性成本。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>SQLite 出現 lock/busy</td><td>多寫入競爭（WAL 允許多讀一寫）</td><td>靠 daemon 的 per-project lock 序列化寫入；CLI 不要並行寫同 repo</td></tr>
+<tr><td>search_code 找不到某詞</td><td>tokenizer 分詞方式與你的查詢不同</td><td>用 camelCase/snake_case 變體重試；確認檔案有進圖</td></tr>
+<tr><td>deep BFS 很慢</td><td>深度太深，中間層節點集合指數成長</td><td>限制深度；或用 Cypher 的有界 path 精確控制</td></tr>
+<tr><td>DB 損壞</td><td>異常關機或多進程並行寫入</td><td>刪除該專案 DB 重新索引（admission barrier 應已防住大部分）</td></tr>
+<tr><td>屬性查詢很慢</td><td>JSON 屬性沒 index，全掃描</td><td>改用節點 label/邊型/name 過濾（這些有 index）</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>解釋 <code>cbm_camel_split</code> tokenizer 為何讓 <code>ProcessOrder</code> 能被 <code>process order</code> 搜到——分詞規則具體是怎麼切的？</li>
+<li>設計一個「找出 DB 裡所有孤兒節點（無任何邊）」的查詢——這在 SQL 層要怎麼寫？</li>
+<li>「store 是 SQL 正規化表格，圖語意在應用層」這個事實，對「新增一種新演算法」的成本意味著什麼？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

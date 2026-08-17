@@ -156,6 +156,40 @@ search_graph(project="cbm", name_pattern=".*pass_semantic.*", label="Function")<
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤 Route 節點從掃描到查詢的誕生</h2>
+<p>前面提過 Route 是一級圖實體——它是怎麼被造出來的？以 FastAPI 專案為例：</p>
+<ol>
+<li><strong>找 pass</strong>：<code>search_graph(project="cbm", name_pattern=".*pass_route_nodes.*", label="Function")</code>——找到 <code>pass_route_nodes.c</code> 的入口。</li>
+<li><strong>看它掃什麼</strong>：它掃描 HTTP 路由宣告（framework 特定的 pattern，如 FastAPI 的 <code>@app.get("/x")</code>、Express 的 <code>app.get("/x")</code>）——<code>search_code(project="cbm", pattern="route_nodes")</code> 找宣告處。</li>
+<li><strong>產出什麼</strong>：建立 <code>Route</code> 節點（含 method、path），再用 <code>HANDLES</code> 邊連到 handler 函式。</li>
+<li><strong>驗證端到端</strong>：索引後 <code>query_graph --query "MATCH (r:Route)-[:HANDLES]->(h) RETURN r.method, r.path, h.name"</code>——你應該看到每個 API 端點與它的實作。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：Route 是「get_architecture 的 routes 資料來源」——不懂它怎麼誕生，就無法診斷「為什麼 routes 是空的」。這條路徑從「產生端（pass）」到「消費端（查詢）」走一圈，建立「圖裡的每種節點都來自某個 pass」的心智模型。</p>
+
+<h2>深入原理 · Pass 間的依賴與「以為 pass 都是串行單執行緒」的誤解</h2>
+<p>Pass 不是無序的——<code>registry.c</code> 定義順序，pipeline 依序執行：definitions（建節點）必須在 calls（建邊）之前；lsp_cross（型別精煉）依賴 definitions 產出的跨檔 registry；route_nodes 依賴 definitions 產出的 handler 節點。每個 pass 讀前一 pass 的產出、publish 自己的節點/邊到 store。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：「一串 pass 依序執行」聽起來像單執行緒，但 <code>pass_parallel</code> 的 worker pool 把<strong>逐檔抽取</strong>平行化——定義、呼叫、語法結構這類「檔案間無需合併」的抽取可以同時跑。真正的串行只有「聚合/跨檔階段」（Hybrid LSP 合併、Louvain、similarity 的成對比較）。所以「索引速度」是「平行抽取 + 串行聚合」的總和——把整條管線當成單執行緒來猜測效能，會完全估錯。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>Route 節點缺失</td><td>框架不在 pass_route_nodes 支援清單，或該檔未索引</td><td>查支援清單；確認檔案進圖；必要時用 Resource 節點（infrascan）補視角</td></tr>
+<tr><td>某 pass 報錯但索引「成功」</td><td>pass 有容錯設計（單 pass 失敗不 abort 整個索引）</td><td>看 log 中該 pass 的 warning；確認受影響的邊型缺失</td></tr>
+<tr><td>SIMILAR_TO 邊全無</td><td>fast 模式跳過 similarity pass，或 minhash 門檻過高</td><td>用 full/moderate 重 index；調門檻</td></tr>
+<tr><td>IAc 資源（K8s）沒進圖</td><td>pass_infrascan/pass_k8s 對你的 manifest 格式不支援</td><td>確認 manifest 路徑被 discover 涵蓋；查 infrascan 支援格式</td></tr>
+<tr><td>跨檔 CALLS 特別少</td><td>lsp_cross pass 沒跑或該語言不支援</td><td>確認索引模式含 lsp pass；查 Hybrid LSP 語言清單</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>新增一個「找出 API 端點總數、並與 handler 數量比對」的查詢——用 Route/HANDLES 邊完成。</li>
+<li>設計一個新 pass（例如「標註 todo/FIXME 註解」）：它需要哪些前置節點、產出什麼節點/邊、在 registry 的哪個位置註冊？</li>
+<li>解釋「平行抽取 + 串行聚合」的架構——為何不能把 lsp_cross 也全部平行化？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

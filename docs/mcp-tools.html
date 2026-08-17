@@ -207,6 +207,41 @@ codebase-memory-mcp cli query_graph --project my-project --query 'MATCH (f:Funct
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 改動前影響分析 + 上線後驗證的完整工具鏈</h2>
+<p>探索陌生 codebase 是「讀」；這裡示範「改」之前的維運流程，把 15 個工具當一條流水線用：</p>
+<ol>
+<li><strong>改之前</strong>：<code>detect_changes(project="my-project")</code>——讀取未 commit 的 diff，把變更映射到受影響符號並標風險等級。</li>
+<li><strong>確認證據涵蓋</strong>：<code>check_index_coverage(project="my-project", paths=["src/core/order_service.go"])</code>——確認你改的檔案真的進圖了，clean 只代表「沒有記錄缺口」。</li>
+<li><strong>沿風險往上查</strong>：<code>trace_path(function_name="OrderService.UpdateStatus", direction="inbound", depth=3)</code>——看誰直接或間接依賴它。</li>
+<li><strong>上線後驗證</strong>：用 <code>ingest_traces</code> 收 runtime trace，驗證真實的 <code>HTTP_CALLS</code> 邊——圖說「有呼叫」、跑起來「真的有呼叫」，兩者對齊才算完成驗證。</li>
+<li><strong>把決策留下來</strong>：<code>manage_adr(mode="update", content="改用 event-driven 解耦 order 與 inventory")</code>——跨 session 保留這次的架構決策。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：單一工具解決單一問題；但「改一個公共函式」需要「分析影響 → 確認涵蓋 → 追蹤風險 → 執行驗證 → 留下決策」五段閉環。這條路徑展示了索引工具如何不只是「查詢工具」，而是<strong>變更管理工具鏈</strong>。</p>
+
+<h2>深入原理 · 工具層的薄包裝設計與「以為 search_code 等於 grep」的誤解</h2>
+<p>mcp.c 是「門面」：15 個工具的 schema 以資料表註冊，收到 JSON-RPC 請求後解包、分派到 store/cypher、再包成結果回傳。真正的圖操作在 <code>store/</code> 與 <code>cypher/</code>——所以 mcp.c 大部分是薄包裝。這個設計讓 CLI 模式可以直接複用同一批執行邏輯（<code>cli search_graph --json</code> 拿到完整 MCP result envelope）。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：<code>search_code</code> 看起來「就是 grep」，於是有人拿它搜整個硬碟，或期望它搜到「不在圖裡」的檔案。實際上 <code>search_code</code> 的範圍<strong>只限於已被索引的檔案</strong>（走 SQLite FTS5 + 自訂 camelCase tokenizer），而且結果會帶上語意資訊（該 hit 對應哪個符號）。同理，<code>ingest_traces</code> 被誤解為「會驗證所有邊」，但它的職責是<strong>收納 runtime trace 來補強/驗證 HTTP_CALLS</strong>——不是全域驗證器。先搞清楚每個工具的「範圍」再下結論。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>工具回傳 project not found</td><td>project 參數與 <code>list_projects</code> 的 name 不一致</td><td>先跑 <code>list_projects</code> 拿正確 name（別自己猜）</td></tr>
+<tr><td><code>detect_changes</code> 一直回空</td><td>沒有未 commit 的變更，或該目錄不是 git repo</td><td>先確認 git 狀態；變更要先寫入再呼叫</td></tr>
+<tr><td><code>check_index_coverage</code> 標了 flagged</td><td>該路徑被 ignore 或超出 auto_index_limit</td><td>調整 .cbmignore / 設定，或對該路徑手動 index</td></tr>
+<tr><td><code>manage_adr</code> 在重索引時卡住</td><td>寫入被序列化（query 走快取、寫入仍序列化）</td><td>query 模式可繼續服務；寫入等重索引完成</td></tr>
+<tr><td>CLI 模式輸出被 progress 污染</td><td>未用 --json 且 --progress 強制開啟</td><td>用 <code>--json</code>；progress 只寫 stderr、stdout 保持機器可讀</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>規劃一次「把一個公共函式從同步改非同步」的完整工具流程：每一步用哪個工具、期望看到什麼、如何驗證。</li>
+<li>解釋「<code>check_index_coverage</code> clean 不等於完整證明」——它沒有記錄缺口，那缺的是什麼？（至少兩個面向）</li>
+<li>為什麼把工具做成「薄包裝」能讓 CLI 與 MCP 共用同一套邏輯？這對測試與維護的影響是什麼？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

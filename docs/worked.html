@@ -97,6 +97,41 @@ cp graphify-out/graph.html graphify-out/graph-zh.html
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 用 CBM 分析 CBM 自己（meta 實作）</h2>
+<p>前一個案例用 graphify 掃描 CBM 源碼；現在用 CBM 掃描 CBM 自己——兩個知識圖譜工具互相分析，你會看到它們「看到不同的東西」：</p>
+<ol>
+<li><strong>索引</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/cbm</code>（對齊 commit 2c50c77 的 src/ + tests/）。</li>
+<li><strong>看 CBM 眼中的架構</strong>：<code>get_architecture(project="cbm", aspects=["clusters","entry_points","hotspots"])</code>——Louvain 社群會把 CBM 的模組聚出來。</li>
+<li><strong>找核心抽象（god node）</strong>：<code>query_graph --query "MATCH (f:Function) RETURN f.name, f.file_path, count{ (f)-[:CALLS]->() } AS out, count{ (f)<-[:CALLS]-() } AS in ORDER BY (out+in) DESC LIMIT 10"</code>——找出被最多人呼叫、呼叫最多人的「樞紐函式」。</li>
+<li><strong>找測試熱點</strong>：<code>query_graph --query "MATCH (m:Method)-[:CALLS]->(t) WHERE t.file_path CONTAINS '/tests/' RETURN m.file_path, count(*) ORDER BY count(*) DESC"</code>——看測試群集中壓測哪個模組。</li>
+<li><strong>交叉對照</strong>：把 CBM 的 clusters 與 graphify 的 343 個社群比較——兩者都會「分群」，但分法不同（邊密度 vs AST 結構）。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：這是對「meta 示範」的升級。graphify 展示「視覺化」，CBM 展示「可查詢的結構化分析」。用同一個 codebase 跑兩套，能最直觀地比較兩個工具的哲學差異——也順便驗證 CBM 對「C 語言（Hybrid LSP 有支援）」的解析品質。</p>
+
+<h2>深入原理 · graphify vs CBM 的分群哲學與「以為社群=模組邊界」的誤解</h2>
+<p>graphify 用 code-only AST 抽取 + 圖社群偵測，產出「視覺化的互動知識圖譜」；CBM 用 tree-sitter + Hybrid LSP 產出「型別感知的呼叫圖」，並用 Louvain（只看 CALLS 邊密度）把「一起工作的函式」聚成 cluster，再由 <code>get_architecture</code> 彙整成報告。兩者都有「社群/cluster」，但<strong>輸入完全不同</strong>：graphify 看 AST 結構，CBM 看型別解析後的呼叫關係。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：看到 343 個社群或 cluster 名稱，很多人直接把它當成「模組邊界」——「既然 CBM 說這 20 個函式是一群，它們應該在同一個目錄、同一個套件」。但 Louvain 只依<strong>邊密度</strong>分群：如果 <code>utils/</code> 裡某個函式被 5 個不同模組重度呼叫，它會跟「呼叫它的那群」聚在一起，而不是跟 <code>utils/</code> 的鄰居。所以 cluster 反映的是<strong>實際的耦合結構</strong>，不是宣告的目錄結構——把兩者混為一談，是解讀架構報告最常見的錯誤。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>CBM 索引 C 專案時 CALLS 邊比預期少</td><td>C 的 macros/typedef 鏈讓部分解析 fallback 到 USAGE</td><td>接受 C 語言的解析極限；關鍵路徑用 search_code 補查</td></tr>
+<tr><td>graphify 與 CBM 的社群對不上</td><td>兩者演算法與輸入語料不同，並非一致</td><td>把它當「互補視角」，不要期待一比一</td></tr>
+<tr><td>圖太大瀏覽器卡死</td><td>節點數超過前端渲染上限</td><td>用社群聚合檢視；或縮小語料範圍</td></tr>
+<tr><td>god node 查詢回傳空</td><td>count{ } 語法不在子集內（部分版本不支援 pattern comprehension）</td><td>改用有向邊的 MATCH + count() 聚合</td></tr>
+<tr><td>測試熱點查不到</td><td>tests/ 被 .gitignore 排除或未索引</td><td>確認 tests/ 有進圖；用 check_index_coverage 驗證</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>比較 graphify 與 CBM：同樣掃 CBM 源碼，兩者各自「看得到」與「看不到」什麼？（至少各列三項）</li>
+<li>用 <code>get_architecture</code> 的 cluster 找出 CBM 的「核心抽象」（被跨模組重度依賴的樞紐），並驗證它是否就是 <code>store/</code> 或 <code>cypher/</code>。</li>
+<li>解釋「Louvain cluster 是實際耦合結構、不是目錄結構」——舉一個具體的場景說明這如何改變你對架構報告的解讀。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

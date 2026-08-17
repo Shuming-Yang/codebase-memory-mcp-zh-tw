@@ -133,6 +133,41 @@ RETURN t.name, t.file_path</code></pre>
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤「看起來被呼叫、其實只是被當參數傳遞」的案例</h2>
+<p>資料模型最有價值的地方，是它把「引用」的確定性分了等級。現在實戰追蹤一個真實的混淆案例：</p>
+<ol>
+<li>先用 <code>get_graph_schema(project="my-project")</code> 看這個專案到底產出了哪些邊型——<strong>先看模型再問問題</strong>。</li>
+<li>選一個函式，列出它所有的 inbound 邊：<code>query_graph --query "MATCH (n)&lt;-[r]-&gt;(f:Function) WHERE f.name = 'execute' RETURN type(r), count(*) ORDER BY count(*) DESC"</code>。</li>
+<li>如果結果同時出現 <code>CALLS</code> 與 <code>CALL_REFERENCE</code>：前者代表「真的呼叫了它」，後者代表「把它當 callback/參數傳給別人」——兩者語意完全不同，卻常被混為一談。</li>
+<li>若出現大量 <code>USAGE</code>，代表型別解析無法證明唯一目標（動態分派、duck typing），此時不要據此斷言「誰呼叫了它」。</li>
+<li>再補一個近複製檢查：<code>query_graph --query "MATCH (a)-[:SIMILAR_TO]->(b) WHERE a:Function AND b:Function RETURN a.name, b.name, a.file_path"</code>，找出被 copy-paste 的 handler。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：直接問「誰呼叫了 X」的人，會把 <code>CALL_REFERENCE</code> 和 <code>USAGE</code> 當成 <code>CALLS</code>，得到錯誤的影響範圍。這條路徑先「看 schema」再「分邊型」再「下結論」，是避免被資料模型誤導的標準做法。</p>
+
+<h2>深入原理 · SQLite 儲存格式與「以為 qualified name = 檔案路徑」的誤解</h2>
+<p>圖資料不是存在某個特殊「圖資料庫」裡，而是<strong>SQLite 正規化表格</strong>：節點表、邊表、屬性表（屬性以 JSON 存放），搜尋走 FTS5 全文索引並配上自訂的 <code>cbm_camel_split</code> tokenizer（讓 <code>ProcessOrder</code> 可被 <code>process order</code> 搜到）。Louvain 社群與 BFS 遍歷是<strong>應用層演算法</strong>，跑在 SQL 之上——所以 store 的查詢延遲依賴於 SQL 的 index 設計與批次技巧，而不是依賴某種神奇的圖引擎。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：qualified name 的格式是 <code>&lt;project&gt;.&lt;path_parts&gt;.&lt;name&gt;</code>，於是很多人以為「<code>get_code_snippet</code> 一定等於沿著檔案路徑找定義」。但當程式裡有<strong>同名函式</strong>（不同檔案、不同套件）或 macro 展開、generated code 時，qualified name 會因為 path_parts 的來源不同而產生你猜不到的名稱。正確做法永遠是：<strong>先用 <code>search_graph</code> 取得確切的 qualified_name</strong>，再餵給 <code>get_code_snippet</code>——自己拼字是最常見的錯誤來源。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>找不到某個 Type/Interface 節點</td><td>該語言沒有 type 抽取，或定義在未索引的檔案</td><td>用 <code>check_index_coverage</code> 確認檔案進圖；查語言支援範圍</td></tr>
+<tr><td>同名函式只查到一個</td><td>search_graph 結果被 limit 截斷，或兩個名稱被合併</td><td>用 file_pattern + 分頁（offset/limit）逐頁確認</td></tr>
+<tr><td>全圖沒有 <code>SIMILAR_TO</code> 邊</td><td>fast index 模式不跑 similarity，或 minhash 門檻太高</td><td>用 full/moderate 模式重 index；調低相似度門檻</td></tr>
+<tr><td>邊型清單與文件「23 種」不符</td><td>不同索引模式/版本產出的邊型不同</td><td>以 <code>get_graph_schema</code> 的實際輸出為準，不要對照死表格</td></tr>
+<tr><td>qualified name 一直 not found</td><td>自己拼了 path，少了 project prefix 或大小寫不符</td><td>一律先 search_graph 拿官方名稱</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>用 <code>get_graph_schema</code> 列出某專案實際存在的所有邊型，並把每一種分類成「高確定性 / 中確定性 / 低確定性」。</li>
+<li>設計一條查詢，找出「被 copy-paste 過且兩個副本都在同一套件」的函式對（結合 <code>SIMILAR_TO</code> 與 file_path）。</li>
+<li>解釋為什麼「<code>CALL_REFERENCE</code> 被當成 <code>CALLS</code>」會造成錯誤的影響範圍分析，並寫出能區分兩者的查詢。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

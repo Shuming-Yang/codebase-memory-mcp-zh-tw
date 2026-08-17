@@ -110,6 +110,40 @@ get_architecture(project="cbm", aspects=["hotspots"])</code></pre>
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 為 Hybrid LSP 加一個語法案例（TDD 流程）</h2>
+<p>假設你發現 TypeScript 的某個 pattern（例如 optional chaining + generics）解析錯，修復它的標準流程：</p>
+<ol>
+<li><strong>先寫會失敗的測試</strong>：在 <code>test_ts_lsp.c</code> 加一個斷言——「這段 TS 的 <code>user?.profile?.getName()</code> 必須解析到 <code>Profile.getName</code>」。</li>
+<li><strong>只跑這個 suite 驗證紅燈</strong>：<code>scripts/test.sh --suites ts_lsp</code>——確認新案例<strong>真的失敗</strong>（這證明測試有效，也重現了 bug）。</li>
+<li><strong>修 pass</strong>：在 <code>pass_lsp_cross.c</code> / <code>internal/cbm/lsp/</code> 的 TS 型別解析加上 optional chaining 的 unwrap 處理。</li>
+<li><strong>驗證綠燈</strong>：重跑 suite 直到通過，再跑 <code>scripts/test.sh</code> 全量（CI gate 相同——本機過 = CI 過）確認沒有 regress 別的語言。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：CBM 的測試主力正是 Hybrid LSP 的語系斷言——6,768 個測試裡最大的一群（<code>test_ts_lsp.c</code>、<code>test_py_lsp.c</code>、<code>test_rust_lsp.c</code>…）。用「先寫斷言」的方式參與，既重現 bug 又永久防回歸，這是這個專案對待解析品質的標準方式。</p>
+
+<h2>深入原理 · 6,768 測試的結構與「以為測試過就保證解析正確」的誤解</h2>
+<p>測試分三層：<strong>語系 LSP 斷言</strong>（每個支援語言一大疊「這段 code 的這個呼叫要解析到那個目標」）、<strong>核心模組單元測試</strong>（cypher/store/cli/daemon，多數函式有 <code>_for_test()</code> 鉤子注入失敗/延遲）、<strong>特殊測試</strong>（<code>repro/</code> 放 issue 重現、<code>scale_contract.sh</code> 驗證大 repo 不退化、<code>smoke_guard.sh</code> 煙霧守衛、<code>grammar_cases.h</code> 文法邊界案例）。<code>scripts/test.sh</code> 與 CI gate 完全一致——本機過 = CI 過。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：6,768 個測試全綠，很容易被讀成「所有解析都正確」。但每個測試斷言的是<strong>「這個具體片段」</strong>——測試再多是「有限案例集」，而程式語言是「無限組合」。所以「測試過」只代表「涵蓋過的案例沒壞」；沒被 grammar_cases 或語系斷言涵蓋的模式（新 framework 的語法糖、極端泛型巢狀）仍可能解析錯。正確心態：測試是「防回歸的安全網」，不是「解析正確性證明」——遇到新 pattern，先加斷言再信任。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>全量測試要跑很久</td><td>6,768 測試 + sanitizer build 全跑很慢</td><td>開發期用 <code>--suites &lt;name&gt;</code> 增量跑；上 CI 才跑全量</td></tr>
+<tr><td>某 suite 名字記錯</td><td>suite 命名與檔案名不完全對應</td><td><code>build/c/test-runner --list-suites</code> 列出正確名字</td></tr>
+<tr><td>測試在本機過、CI 掛</td><td>環境差異（compiler/sanitizer 旗標）</td><td>確認本機用 <code>scripts/test.sh</code> 跑（含 sanitizer），不要用自訂指令</td></tr>
+<tr><td>新增案例後別的語言 regress</td><td>跨語言的共用邏輯被動到</td><td>重跑全量；用 git diff 檢查 lsp/ 共用程式碼</td></tr>
+<tr><td>repro 案例跑不出 issue 的 bug</td><td>repro 依賴特定版本/環境</td><td>確認 repro 對應的 commit/版本；必要時更新 fixture</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>寫一段測試骨架：給定一段 Python，斷言 <code>foo().bar()</code> 解析到 <code>Bar.bar</code>——列出需要的 setup、斷言與 suite 註冊位置。</li>
+<li>解釋 <code>_for_test()</code> 鉤子如何讓「失敗注入」成為可能——它對測試「錯誤路徑」的價值是什麼？</li>
+<li>「本機過 = CI 過」這個承諾的成立條件是什麼？（列出至少兩個會打破它的環境因素）</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

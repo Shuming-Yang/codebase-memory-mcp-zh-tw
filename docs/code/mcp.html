@@ -137,6 +137,41 @@ trace_path(project="cbm", function_name="handle_search_graph", direction="outbou
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 追蹤一次 JSON-RPC 呼叫的完整生命週期</h2>
+<p>當你的 agent 呼叫 <code>query_graph</code>，實際發生的事比你想像的多：</p>
+<ol>
+<li><strong>接收</strong>：MCP server 從 stdin 讀一行 JSON-RPC（<code>cbm_mcp_server_handle()</code>）。</li>
+<li><strong>解包</strong>：<code>cbm_mcp_get_tool_name()</code> / <code>cbm_mcp_get_arguments()</code> 取出工具名與參數——JSON 解析這裡完成。</li>
+<li><strong>分派</strong>：查 schema 表找到 <code>query_graph</code> 對應的 handler，路由到 <code>cypher/</code>。</li>
+<li><strong>執行</strong>：cypher 引擎跑完，回傳 <code>cbm_cypher_result_t</code>。</li>
+<li><strong>回覆</strong>：<code>cbm_jsonrpc_format_response()</code> / <code>cbm_jsonrpc_format_error()</code> 包成 JSON-RPC 結果寫回 stdout。若 Cypher 回報 unsupported，就在這裡成形為帶 code/message 的錯誤。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：一次呼叫橫跨「協議層 → 工具層 → 引擎層 → 協議層」。追蹤它，你才理解「MCP 工具 = 有 JSON schema 的 RPC endpoint」這句話——schema 不是文件裝飾，而是 client 呼叫的合約。</p>
+
+<h2>深入原理 · Schema 驅動的工具表與「以為每個工具都是獨立重邏輯」的誤解</h2>
+<p>15 個工具的定義是<strong>資料驅動</strong>的：每個工具 = name + description + input schema（參數名、型別、是否必填），註冊成工具清單。MCP client 靠這份 schema 知道「怎麼呼叫」。執行時用 switch 或查表分派到 handler。session 生命週期由 <code>cbm_mcp_server_new/handle/evict_idle</code> 管理——<code>evict_idle()</code> 與 daemon 合作回收閒置 session 的資源。auto_index 在 session 首次連線時依 config 觸發。</p>
+<p><strong>「大家以為正確其實有誤」的案例</strong>：很多人以為「每個 MCP 工具都有自己的一套複雜邏輯」，於是排查問題時在 mcp.c 裡找半天。實際上<strong>查詢類工具大多是薄包裝</strong>：解析參數 → 呼叫 store/cypher → 包結果。真正的圖操作在 store 層。所以一個查詢「行為怪異」時，重點應該在 store/cypher 或資料本身，而不是 mcp.c——把除錯焦點放對地方，能省下大量時間。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td>JSON-RPC parse error</td><td>client 送了非標準 body，或工具名不認識</td><td>檢查 <code>tools/call</code> 的 name 是否在工具清單內</td></tr>
+<tr><td>工具回傳 project not found</td><td>project 參數不在 <code>list_projects</code> 結果中</td><td>先跑 list_projects 拿正確名稱</td></tr>
+<tr><td>auto-index 沒觸發</td><td>auto_index config 未開啟</td><td><code>config set auto_index true</code> 後重啟 session</td></tr>
+<tr><td>查詢結果被截斷</td><td>分頁 limit/offset 沒設或設太小</td><td>用 limit+offset 分頁，或用 CLI --json 拿完整 envelope</td></tr>
+<tr><td>session 資源異常釋放</td><td>evict_idle 誤回收了還在用的 session</td><td>檢查 idle timeout 設定；確認 daemon 協調正常</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>描述「<code>search_graph</code> 從 JSON-RPC 請求到 store 查詢」的完整路徑，標出每層的函式名。</li>
+<li>為什麼「薄包裝」設計能讓 CLI 與 MCP 共用同一套邏輯？這對「同一工具的兩種入口行為一致」的保證是什麼？</li>
+<li>如果一個新工具要加入 CBM，你需要改哪些位置（schema 表、分派、CLI 對映、文件）？</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

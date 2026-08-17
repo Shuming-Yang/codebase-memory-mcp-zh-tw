@@ -126,6 +126,42 @@ internal/cbm/         Vendored tree-sitter grammars（158 語言）+ AST extract
 </ul>
 </div>
 
+
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>進階實戰 · 大型 monorepo 的跨服務耦合審計</h2>
+<p>前面的例子是「單一函式的呼叫鏈」。現在換一個真正的大場面：一個 12 個微服務、5 種語言（Go/Python/TS/Java/Kotlin）、20 萬檔的 monorepo，你要回答「<strong>改 auth 服務會炸到哪些服務</strong>」。</p>
+<ol>
+<li><strong>先索引整個 monorepo</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/monorepo</code>（RAM-first 管線在這種規模下建議先設 <code>CBM_WORKERS</code>）。</li>
+<li><strong>看全域架構</strong>：<code>get_architecture(project="monorepo", aspects=["clusters","boundaries"])</code>——Louvain 社群會把「一起工作的函式」聚成群，先建立鳥瞰。</li>
+<li><strong>找出跨服務的 HTTP 呼叫</strong>：<code>query_graph --query "MATCH (a:Function)-[:HTTP_CALLS]->(b:Function) WHERE a.file_path CONTAINS '/auth/' RETURN b.file_path, count(*) AS hits ORDER BY hits DESC"</code>——用真實的 HTTP_CALLS 邊而非猜測。</li>
+<li><strong>對未 commit 的變更做爆炸半徑分析</strong>：<code>detect_changes(project="monorepo")</code>——它會把 git diff 映射到受影響符號並標上風險等級。</li>
+<li><strong>用 <code>get_code_snippet</code> 深入關鍵節點</strong>，確認改動點。</li>
+</ol>
+<p><strong>為什麼選這條路徑</strong>：這類「跨服務影響」問題靠 grep 要搜遍 20 萬檔；靠人腦逐 service 追更不可能。CBM 的價值在於 <code>HTTP_CALLS</code>/<code>CROSS_*</code> 邊讓跨服務耦合<strong>可被查詢</strong>，而 <code>detect_changes</code> 把「改哪一行」直接映射成「影響哪些符號」——這是單靠文本搜尋做不到的。</p>
+
+<h2>深入原理 · 多 pass 管線的執行模型與「看似正確卻有誤」的索引</h2>
+<p>架構上最容易誤解的一點：<strong>索引不是「跑一次」，而是每一輪都有順序依賴的 pass 串</strong>。pipeline 依 <code>registry.c</code> 註冊的順序依序執行：<code>pass_definitions</code>（建節點）→ <code>pass_calls</code>（建 CALLS）→ <code>pass_lsp_cross</code>（型別精煉）→ …→ <code>pass_route_nodes</code> / <code>pass_cross_repo</code> / <code>pass_similarity</code>。前面的 pass 若不產出某種節點，後面的 pass 就沒有輸入——所以「看起來都叫 pass」不代表彼此獨立。</p>
+<p>平行的部分是 <code>pass_parallel.c</code> 的 worker pool，它平行的是<strong>逐檔抽取</strong>；合併與跨檔解析（Hybrid LSP、Louvain）仍然是聚合階段。這就是為什麼 worker 數不是越高越好（見下方排解表）。</p>
+<p><strong>「大家以為索引正確但其實有誤」的案例</strong>：你 trace 一個函式，發現它沒有 inbound <code>CALLS</code> 邊，於是斷言「這是死碼」——但真相可能是：這個函式是<strong>經由 symlink 路徑或 .gitignore 排除的檔案</strong>定義的，根本沒進圖；或是語言不在 Hybrid LSP 支援清單，解析 fallback 成 <code>USAGE</code>（不保證唯一的引用），所以沒有 <code>CALLS</code> 邊。索引的「正確」是<strong>相對於當時的 discover 規則與語言支援範圍</strong>的，不是絕對正確。驗證手段：先跑 <code>get_graph_schema</code> 看該函式的實際邊型，再用 <code>check_index_coverage</code> 確認檔案真的被索引。</p>
+
+<h2>進階疑難排解</h2>
+<table>
+<tr><th>症狀</th><th>可能原因</th><th>解決方案</th></tr>
+<tr><td><code>get_architecture</code> 的 routes 是空的</td><td><code>pass_route_nodes</code> 未執行，或框架不在支援清單</td><td>確認索引時沒有 skip route pass；查 upstream 支援的 framework 清單</td></tr>
+<tr><td>跨 repo 查不到 <code>CROSS_*</code> 邊</td><td>兩個 repo 沒有 index 進同一個 store，或未用 cross-repo-intelligence 模式</td><td>確認兩者 project 在同一 cache root，必要時用 cross-repo 模式重 index</td></tr>
+<tr><td>設 <code>CBM_WORKERS=64</code> 反而更慢</td><td>worker 過多造成記憶體壓力與合併階段鎖競爭</td><td>逐步調降（建議 CPU 核心數 1–2 倍），觀察索引時間曲線</td></tr>
+<tr><td>cluster 與資料夾結構對不上</td><td>Louvain 只看 CALLS 邊密度，跨目錄的高耦合函式會聚在一起</td><td>這不是 bug——把 cluster 當「實際功能模組」而非目錄鏡像</td></tr>
+<tr><td>改了 code 但查詢結果沒變</td><td>watcher 未啟用（auto_watch false）或增量尚未觸發</td><td><code>config set auto_watch true</code>，或手動重跑 index_repository</td></tr>
+</table>
+
+<h2>進階挑戰題</h2>
+<ol>
+<li>寫一條 Cypher，找出「兩個服務之間存在循環 HTTP 依賴」的配對（提示：<code>HTTP_CALLS</code> 邊 + path 比較）。</li>
+<li>你發現某函式沒有 inbound CALLS 卻仍被執行——列出至少三種「索引看似正確其實有誤」的可能，並寫出對應的驗證工具呼叫。</li>
+<li>解釋為何「平行化抽取」與「聚合型 pass」不能簡單地全部打散到 worker 上。</li>
+</ol>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
