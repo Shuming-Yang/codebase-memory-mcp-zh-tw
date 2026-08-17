@@ -117,6 +117,46 @@ codebase-memory-mcp config list</code></pre>
 </ul>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 新專案的完整 CBM 設定流程</h2>
+<p>假設你加入一個 10 人團隊的 Node.js monorepo（含前端 React + 後端 Express），要設定 CBM 讓所有人共用同一套知識圖譜。</p>
+<ol>
+<li><strong>建立 .cbmignore</strong>：<code>echo -e "build/\ndist/\ncoverage/\n*.min.js\nnode_modules/" &gt; .cbmignore</code>——排除建構产物、測試覆蓋報告、壓縮檔。</li>
+<li><strong>設定 extra_extensions</strong>：<code>echo '{"extra_extensions": {".mjs": "javascript", ".tsx": "typescriptreact"}}' &gt; .codebase-memory.json</code>——確保 .mjs 和 .tsx 被正確解析。</li>
+<li><strong>啟用自動索引與 watcher</strong>：<code>codebase-memory-mcp config set auto_index true &amp;&amp; codebase-memory-mcp config set auto_watch true</code>——session 啟動時自動索引、背景持續偵測變更。</li>
+<li><strong>設定自動索引上限</strong>：<code>codebase-memory-mcp config set auto_index_limit 80000</code>——大型 monorepo 需要較高上限。</li>
+<li><strong>確認設定</strong>：<code>codebase-memory-mcp config list</code>——顯示所有生效的設定值。</li>
+<li><strong>Commit artifact</strong>：<code>git add .codebase-memory/ .gitattributes .codebase-memory.json .cbmignore &amp;&amp; git commit -m "chore: add CBM config for team"</code>——團隊共享設定與 artifact。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td><code>auto_index_limit</code> 設太低會導致大型專案被截斷；設太高會讓首次索引很慢。建議從 50,000 開始。</td><td><code>config set auto_index_limit 50000</code><br>用 <code>index_status</code> 確認節點數</td></tr>
+<tr><td><strong>品質</strong></td><td><code>.cbmignore</code> 的語法是 gitignore——不是正則。常見錯誤是用 <code>*.test.*</code> 而非 <code>*.test.js</code>。</td><td>用 <code>check_index_coverage</code> 驗證排除是否生效<br>測試 <code>!important.min.js</code> 反轉語法</td></tr>
+<tr><td><strong>安全</strong></td><td><code>CBM_CACHE_DIR</code> 的預設值是 <code>~/.cache/codebase-memory-mcp</code>——確保目錄權限正確（700）。</td><td><code>chmod 700 ~/.cache/codebase-memory-mcp</code><br>Daemon 在「第一個 session」時捕捉設定</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（設定）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>環境變數</td><td>完整 CBM_* 變數表</td><td><a href="security.html">安全模型</a></td><td>安全頁聚焦 CBM_ALLOWED_ROOT/CACHE_DIR 的安全用途，設定頁列完整清單</td></tr>
+<tr><td>.cbmignore</td><td>語法與分層規則</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 discover 模組如何讀取 ignore 規則</td></tr>
+<tr><td>extra_extensions</td><td>設定語法與覆蓋規則</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 tree-sitter 如何用副檔名對應語言 grammar</td></tr>
+<tr><td>daemon 設定</td><td>config set 的生效時機</td><td><a href="daemon.html">Session Daemon</a></td><td>daemon 頁解釋「第一個 session 捕捉設定」的完整機制</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 <code>config list</code> 查看所有設定，並解釋每個值的意義</li>
+<li>- [ ] 能建立 .cbmignore 排除 build/dist/coverage 目錄，並用 <code>check_index_coverage</code> 驗證</li>
+<li>- [ ] 能設定 extra_extensions 把 .mjs 映射到 javascript</li>
+<li>- [ ] 能解釋 auto_index 與 auto_watch 的差異（前者一次性、後者持續性）</li>
+<li>- [ ] 能在多租戶環境設定 CBM_ALLOWED_ROOT，並解釋為何不能跳過這步</li>
+<li>- [ ] 能 Commit .cbmignore + .codebase-memory.json 進 repo，讓團隊共享設定</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

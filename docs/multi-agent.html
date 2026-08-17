@@ -143,6 +143,46 @@ check_index_coverage(project="mystery-project", paths=["src/handler.ts"])</code>
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 10 人異質 agent 團隊的統一部署</h2>
+<p>假設你的 10 人團隊中，有人用 Claude Code、有人用 Codex、有人用 Cursor、有人用 VS Code。你要確保每個人都能用到 CBM 的三層 agent。</p>
+<ol>
+<li><strong>平台盤點</strong>：確認每個成員「真的在用」哪些 agent——conditional 安裝只寫入「已存在 config 路徑」的平台。</li>
+<li><strong>統一版本</strong>：鎖定 CBM 版本，所有成員用同一版本。</li>
+<li><strong>跑 install</strong>：<code>codebase-memory-mcp install</code>——37 個自動偵測 + 6 個 conditional/explicit 全寫入。</li>
+<li><strong>驗證三層 agent</strong>：在每個平台上呼叫 Scout（search_graph）+ Verify（trace_path）+ Auditor（query_graph）確認三層都存在。</li>
+<li><strong>驗證 hooks</strong>：在 Claude Code 上跑 Grep，確認 PreToolUse hook 把圖符號注入 additionalContext。</li>
+<li><strong>建立更新機制</strong>：團隊升級走「先備好再換」流程。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>Scout 層設計上就是 3–4 個窄呼叫，不適合做完整探索。Verify/Auditor 的 token 消耗約為 Scout 的 5-10 倍。</td><td>Scout → 快速方向確認<br>Verify → 任務導向深入<br>Auditor → 完整稽核</td></tr>
+<tr><td><strong>品質</strong></td><td>check_index_coverage 的 clean 結果只代表「沒有記錄缺口」，不是完整證明。</td><td>用 <code>get_graph_schema</code> 交叉驗證<br>用 <code>search_code</code> 補查未索引檔案</td></tr>
+<tr><td><strong>安全</strong></td><td>conditional 安裝只在已存在的 config 路徑才寫入。hooks 是 fail-open + context-only，永遠不拒絕或替換工具呼叫。</td><td>絕不翻開實驗性 feature flag<br>絕不啟用 plugin</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（Multi-Agent）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>三層 agent</td><td>Scout/Verify/Auditor 的定位與行為</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁解釋每個工具的參數，Multi-Agent 頁解釋三層如何選擇工具子集</td></tr>
+<tr><td>hooks</td><td>fail-open + context-only 的設計</td><td><a href="security.html">安全模型</a></td><td>安全頁從「installer 絕不」角度解釋</td></tr>
+<tr><td>工具 profile</td><td>Kiro/Junie/Qoder/Factory 的 allowlist</td><td><a href="code/mcp.html">mcp 程式碼對照</a></td><td>程式碼頁解釋工具註冊機制</td></tr>
+<tr><td>版本管理</td><td>團隊版本統一的重要性</td><td><a href="daemon.html">Session Daemon</a></td><td>daemon 頁解釋 admission barrier 的完整機制</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能在你的 agent 平台上驗證 Scout/Verify/Auditor 三層都存在</li>
+<li>- [ ] 能解釋 conditional 安裝的安全意義</li>
+<li>- [ ] 能用 check_index_coverage 檢查證據路徑涵蓋率，並解釋 clean ≠ 完整證明</li>
+<li>- [ ] 能在 Claude Code 上驗證 hooks 觸發</li>
+<li>- [ ] 能設計一份「團隊 CBM 部署 SOP」</li>
+<li>- [ ] 能解釋工具 profile 如何限制工具面</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

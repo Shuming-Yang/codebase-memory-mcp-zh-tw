@@ -153,6 +153,46 @@ trace_path(function_name="ProcessOrder", direction="inbound")
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 驗證 Hybrid LSP 對 Python method chaining 的解析品質</h2>
+<p>假設你有一個 FastAPI + SQLAlchemy 2.0 專案，要驗證 Hybrid LSP 是否正確解析 method chaining 回傳型別。</p>
+<ol>
+<li><strong>索引</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/fastapi-project</code></li>
+<li><strong>搜尋目標</strong>：<code>search_graph(project="app", name_pattern=".*all.*", label="Method")</code>——會看到好幾個 <code>all()</code>。</li>
+<li><strong>確認解析品質</strong>：<code>query_graph --query "MATCH (m:Method)&lt;-[:CALLS]-(caller) WHERE m.name = 'all' RETURN caller.file_path, count(*) ORDER BY count(*) DESC"</code>——若呼叫點落在 <code>CALLS</code> 邊，代表 Hybrid LSP 成功解析到 <code>Query.all</code> 或 <code>Result.all</code>。</li>
+<li><strong>若只有 USAGE</strong>：代表型別推斷在這條鏈上斷了，需靠 <code>get_code_snippet</code> 人工確認。</li>
+<li><strong>追蹤完整呼叫鏈</strong>：<code>trace_path(function_name="Query.all", direction="inbound")</code>——看所有呼叫它的地方。</li>
+<li><strong>對比 tree-sitter</strong>：同一段程式碼在沒有 Hybrid LSP 的語言中，<code>.all()</code> 永遠只會是 USAGE。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>Hybrid LSP 是單趟、近似、無增量狀態的——它沒有 IDE 的跨編輯型別快取。泛型深度巢狀、動態分派會靜默 fallback。</td><td>接受 fallback 行為<br>關鍵路徑用 search_code 補查</td></tr>
+<tr><td><strong>品質</strong></td><td>「CALLS 邊存在」只保證「演算法成功解析」，不保證「人腦認同」——這是理解解析品質上限的關鍵。</td><td>用 get_code_snippet 人工確認<br>用 trace_path 驗證呼叫鏈</td></tr>
+<tr><td><strong>安全</strong></td><td>Hybrid LSP 編譯進靜態二進位——沒有外部 process、沒有 API key、沒有網路連線。158 語言的 tree-sitter grammar 也 vendored 進 internal/cbm/。</td><td>零 runtime 依賴<br>零網路連線</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（運作原理）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>兩層解析</td><td>tree-sitter + Hybrid LSP 的設計</td><td><a href="architecture.html">架構總覽</a></td><td>架構頁從模組職責角度，運作原理從設計哲學角度</td></tr>
+<tr><td>RAM-first</td><td>四步驟管線</td><td><a href="performance.html">效能基準</a></td><td>效能頁有具體基準數據（3 分鐘 kernel）</td></tr>
+<tr><td>Hybrid LSP 語言</td><td>10 語言的處理重點表</td><td><a href="code/passes.html">passes 程式碼對照</a></td><td>程式碼頁解釋 C 實現的 import graph 與 registry</td></tr>
+<tr><td>不內建 LLM</td><td>設計哲學</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁解釋 agent 如何把自然語言轉成工具呼叫</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能解釋 CBM 為什麼不內建 LLM（你的 agent 本身就是翻譯官）</li>
+<li>- [ ] 能說出 tree-sitter（158 語言語法層）vs Hybrid LSP（10+ 語言型別層）的差異</li>
+<li>- [ ] 能描述 RAM-first 管線的四個步驟（LZ4 → in-memory SQLite → 多 pass → 單次 dump）</li>
+<li>- [ ] 能用 search_graph + query_graph 驗證某個 method call 是否被 Hybrid LSP 正確解析</li>
+<li>- [ ] 能解釋「Go to Definition 等級」的型別解析是什麼意思</li>
+<li>- [ ] 能解釋 Hybrid LSP 是「單趟、近似、無增量」的，與 IDE 的差異</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

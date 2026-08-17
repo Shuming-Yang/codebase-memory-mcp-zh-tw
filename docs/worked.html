@@ -132,6 +132,45 @@ cp graphify-out/graph.html graphify-out/graph-zh.html
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 用 CBM 分析 CBM 自己（meta 實作）</h2>
+<p>用 CBM 掃描 CBM 自己的源碼，做完整的架構分析。</p>
+<ol>
+<li><strong>索引</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/cbm</code>（對齊 commit 2c50c77）。</li>
+<li><strong>看架構</strong>：<code>get_architecture(project="cbm", aspects=["clusters","entry_points","hotspots"])</code></li>
+<li><strong>找核心抽象</strong>：<code>query_graph --query "MATCH (f:Function) RETURN f.name, f.file_path ORDER BY f.name LIMIT 10"</code>——找出被最多人呼叫的樞紐函式。</li>
+<li><strong>找測試熱點</strong>：<code>query_graph --query "MATCH (m:Method)-[:CALLS]-&gt;(t) WHERE t.file_path CONTAINS '/tests/' RETURN m.file_path, count(*) ORDER BY count(*) DESC"</code></li>
+<li><strong>交叉對照</strong>：把 CBM 的 clusters 與 graphify 的 343 個社群比較——兩者分法不同（邊密度 vs AST 結構）。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>graphify 的互動圖節點數超過 5,000 會卡——用社群聚合檢視。CBM 的圖查詢在百萬節點級仍 &lt;10ms。</td><td>graphify → 視覺化（節點上限）<br>CBM → 結構化查詢（無上限）</td></tr>
+<tr><td><strong>品質</strong></td><td>Louvain cluster 反映的是實際耦合結構，不是目錄結構——把兩者混為一談是解讀架構報告最常見的錯誤。</td><td>cluster = 實際功能模組<br>≠ 目錄鏡像</td></tr>
+<tr><td><strong>安全</strong></td><td>graphify 是「code-only AST 抽取」——零 LLM、零 API key、純本機。CBM 也是本機處理，兩者都無 telemetry。</td><td>兩者都是純本機工具<br>無需網路連線</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（實作案例）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>graphify vs CBM</td><td>視覺化 vs 結構化查詢</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 CBM 的兩層解析如何產出高品質邊</td></tr>
+<tr><td>社群偵測</td><td>343 個社群的意義</td><td><a href="architecture.html">架構總覽</a></td><td>架構頁解釋 Louvain 在 CBM 中的應用</td></tr>
+<tr><td>god node</td><td>核心抽象的發現方法</td><td><a href="data-model.html">圖資料模型</a></td><td>資料模型解釋 degree 計算的 Cypher 語法</td></tr>
+<tr><td>meta 分析</td><td>用工具分析工具</td><td><a href="code/index.html">程式碼對照</a></td><td>程式碼頁解釋 CBM 的 C 實現細節</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 graphify 掃描一個 codebase 產生知識圖譜</li>
+<li>- [ ] 能解讀互動圖中的社群結構，並解釋 god node 的意義</li>
+<li>- [ ] 能用 <code>get_architecture</code> 的 cluster 找出專案的核心抽象</li>
+<li>- [ ] 能比較 graphify 與 CBM「看到不同的東西」——至少各列三項</li>
+<li>- [ ] 能解釋「Louvain cluster 是實際耦合結構、不是目錄結構」</li>
+<li>- [ ] 能用 GRAPH_REPORT.md 做架構審計</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

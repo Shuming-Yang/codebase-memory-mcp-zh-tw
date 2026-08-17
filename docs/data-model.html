@@ -168,6 +168,46 @@ RETURN t.name, t.file_path</code></pre>
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 用資料模型做完整的架構健康檢查</h2>
+<p>假設你接手一個 Python FastAPI 專案，要用資料模型做完整的架構健康檢查。</p>
+<ol>
+<li><strong>先看 schema</strong>：<code>get_graph_schema(project="fastapi-project")</code>——確認實際產出了哪些 label 和邊型。</li>
+<li><strong>邊型分類</strong>：高確定性（CALLS、HANDLES）→ 中確定性（CALL_REFERENCE）→ 低確定性（USAGE）。</li>
+<li><strong>死碼偵測</strong>：<code>MATCH (f:Function) WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() } AND NOT EXISTS { (f)&lt;-[:IMPORTS]-() } RETURN f.name</code></li>
+<li><strong>近複製偵測</strong>：<code>MATCH (a:Function)-[:SIMILAR_TO]-&gt;(b:Function) WHERE a.file_path CONTAINS '/handlers/' RETURN a.name, b.name</code></li>
+<li><strong>Route 覆蓋</strong>：<code>MATCH (r:Route) OPTIONAL MATCH (r)-[:HANDLES]-&gt;(h:Function) RETURN r.method, r.path, h.name</code></li>
+<li><strong>型別邊品質</strong>：<code>MATCH (f:Function)-[r:CALLS]-&gt;(g:Function) WHERE f.file_path CONTAINS '/auth/' RETURN type(r), count(*) ORDER BY count(*) DESC</code></li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>qualified name 的查詢比 regex 快——精確匹配不需要 LIKE 過濾。</td><td>search_graph → 發現名稱<br>get_code_snippet → 精確讀取</td></tr>
+<tr><td><strong>品質</strong></td><td>CALLS / CALL_REFERENCE / USAGE 代表不同解析確定性。混為一談會得到錯誤影響範圍。</td><td>先 get_graph_schema 看邊型<br>再分邊型查詢</td></tr>
+<tr><td><strong>安全</strong></td><td>qualified name 格式是 <code>&lt;project&gt;.&lt;path_parts&gt;.&lt;name&gt;</code>——自己拼字是最常見錯誤來源。</td><td>一律先 search_graph 拿官方名稱</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（圖資料模型）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>節點/邊型</td><td>13 種節點 + 23 種邊的靜態表</td><td><a href="code/store.html">store 程式碼對照</a></td><td>程式碼頁解釋 SQLite 正規化表格的實現</td></tr>
+<tr><td>CALLS 語意</td><td>三種邊的差異</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 Hybrid LSP 如何產出這些邊</td></tr>
+<tr><td>qualified name</td><td>格式定義</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁解釋 get_code_snippet 的使用方式</td></tr>
+<tr><td>SIMILAR_TO</td><td>MinHash + LSH 簡介</td><td><a href="performance.html">效能基準</a></td><td>效能頁解釋 similarity pass 的效能影響</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 get_graph_schema 看專案的實際邊型，並分類成高/中/低確定性</li>
+<li>- [ ] 能解釋 CALLS vs CALL_REFERENCE vs USAGE 的語意差異</li>
+<li>- [ ] 能用 search_graph 發現確切 qualified_name，再用 get_code_snippet 讀原始碼</li>
+<li>- [ ] 能用 SIMILAR_TO 找出被 copy-paste 的函式對</li>
+<li>- [ ] 能用 NOT EXISTS 找出未被使用的型別（可能是死碼）</li>
+<li>- [ ] 能解釋「qualified name ≠ 檔案路徑」，並示範正確的查詢方式</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

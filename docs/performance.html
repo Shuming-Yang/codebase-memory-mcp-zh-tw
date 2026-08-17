@@ -147,6 +147,47 @@ query_graph(project="my-project", query="MATCH (f:Function)-[:CALLS]->(g:Functio
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 10M LOC monorepo 的效能調校全流程</h2>
+<p>假設你有一個 10M 行的 C++/Python/TypeScript monorepo，要在 8 核心、32GB RAM 的機器上把索引時間壓進 5 分鐘。</p>
+<ol>
+<li><strong>測基準線</strong>：<code>time codebase-memory-mcp cli index_repository --repo-path /path/to/monorepo</code></li>
+<li><strong>調整 worker</strong>：<code>CBM_WORKERS=12</code>（核心數 × 1.5）重跑，觀察時間曲線。</li>
+<li><strong>切 fast 模式</strong>：<code>--mode fast</code>——跳過 similarity/semantic pass，換速度。</li>
+<li><strong>設記憶體上限</strong>：<code>CBM_MEM_BUDGET_MB=19200</code>（32GB × 60%）。</li>
+<li><strong>驗證</strong>：用 <code>index_status</code> 確認節點/邊數與 generation。</li>
+<li><strong>增量更新</strong>：<code>config set auto_watch true</code>，之後第二次索引從 5 分鐘降到 &lt;30 秒。</li>
+<li><strong>對比 token</strong>：5 次結構查詢（~3,400 token）vs grep（~412,000 token）——省 99.2%。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>瓶頸在聚合階段（Hybrid LSP、Louvain），而非平行抽取。worker 超過核心數後收益遞減。</td><td><code>CBM_WORKERS</code> = 核心數 × 1–1.5<br><code>CBM_MEM_BUDGET_MB</code> = RAM × 0.5–0.6</td></tr>
+<tr><td><strong>品質</strong></td><td>fast 模式跳過 similarity/semantic/lsp pass——邊不完整。需要完整邊用 full 模式。</td><td>fast → 可用圖<br>full → 完整圖<br>用 <code>get_graph_schema</code> 確認邊型</td></tr>
+<tr><td><strong>安全</strong></td><td>索引用 in-memory SQLite——用完即釋放。但 <code>CBM_MEM_BUDGET_MB</code> 設太大可能影響同機器其他服務。</td><td>用 <code>CBM_DIAGNOSTICS=1</code> 看 trajectory<br>避免在生產機器跑 full index</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（效能基準）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>索引速度</td><td>3 分鐘 kernel、6 秒 Django</td><td><a href="architecture.html">架構總覽</a></td><td>架構頁解釋「多 pass 管線」如何實現</td></tr>
+<tr><td>查詢延遲</td><td>Cypher &lt;1ms、trace &lt;10ms</td><td><a href="cypher.html">Cypher 查詢</a></td><td>Cypher 頁有查詢語法與案例</td></tr>
+<tr><td>Token 節省</td><td>99.2%</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁解釋每個工具的 token 消耗</td></tr>
+<tr><td>調參建議</td><td>CBM_WORKERS / CBM_MEM_BUDGET_MB</td><td><a href="config.html">設定</a></td><td>設定頁有完整環境變數表</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能在你的硬體上跑 <code>time index_repository</code>，並調整 CBM_WORKERS 找到轉折點</li>
+<li>- [ ] 能解釋 RAM-first 管線的四個步驟</li>
+<li>- [ ] 能用 fast vs full 模式對比索引時間、節點數、查詢延遲</li>
+<li>- [ ] 能估算「5 次結構查詢 vs 逐檔 grep」的 token 消耗比</li>
+<li>- [ ] 能用 <code>CBM_DIAGNOSTICS=1</code> 產生 trajectory.ndjson 並解讀</li>
+<li>- [ ] 能解釋增量更新如何將第二次索引從分鐘級降到秒級</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

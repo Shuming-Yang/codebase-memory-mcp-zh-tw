@@ -242,6 +242,46 @@ codebase-memory-mcp cli query_graph --project my-project --query 'MATCH (f:Funct
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 改動前影響分析 + 上線後驗證的完整工具鏈</h2>
+<p>假設你要把一個公共函式從同步改非同步，用 15 個工具走完完整的變更管理流程。</p>
+<ol>
+<li><strong>改之前</strong>：<code>detect_changes(project="my-project")</code>——讀取未 commit 的 diff，映射到受影響符號。</li>
+<li><strong>確認證據涵蓋</strong>：<code>check_index_coverage(project="my-project", paths=["src/core/order_service.go"])</code>——確認改的檔案進圖了。</li>
+<li><strong>沿風險往上查</strong>：<code>trace_path(function_name="OrderService.UpdateStatus", direction="inbound", depth=3)</code>——看誰依賴它。</li>
+<li><strong>讀原始碼</strong>：<code>get_code_snippet(project="my-project", qualified_name="myproj.src.core.order_service.update_status")</code></li>
+<li><strong>上線後驗證</strong>：<code>ingest_traces</code>——收 runtime trace，驗證真實的 HTTP_CALLS 邊。</li>
+<li><strong>留下決策</strong>：<code>manage_adr(mode="update", content="改用 event-driven 解耦 order 與 inventory")</code></li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>search_graph 是最常用的發現工具——先搜名稱再用其他工具，比直接下 Cypher 查詢更高效。</td><td>search_graph → 發現名稱<br>trace_path → 追蹤關係<br>get_code_snippet → 讀原始碼</td></tr>
+<tr><td><strong>品質</strong></td><td>check_index_coverage 的 clean 只代表「沒有記錄缺口」——它不保證所有路徑都被索引。</td><td>用 get_graph_schema 交叉驗證<br>用 search_code 補查</td></tr>
+<tr><td><strong>安全</strong></td><td>ingest_traces 只收納 runtime trace 來補強 HTTP_CALLS——不是全域驗證器。先搞清楚每個工具的「範圍」再下結論。</td><td>每個工具都有明確的職責邊界<br>CLI 模式不連 daemon</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（MCP 工具）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>工具分類</td><td>索引/查詢/讀取/維運四類</td><td><a href="architecture.html">架構總覽</a></td><td>架構頁從模組角度解釋，MCP 頁從工具角度解釋</td></tr>
+<tr><td>search_graph</td><td>結構搜尋的完整參數</td><td><a href="data-model.html">圖資料模型</a></td><td>資料模型解釋 qualified name 的格式與用途</td></tr>
+<tr><td>query_graph</td><td>Cypher 查詢的入口</td><td><a href="cypher.html">Cypher 查詢</a></td><td>Cypher 頁有完整語法表與案例</td></tr>
+<tr><td>CLI 模式</td><td>每個工具都能用 cli 子指令跑</td><td><a href="daemon.html">Session Daemon</a></td><td>daemon 頁解釋 CLI 與 daemon 的交互（per-project lock）</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 search_graph + trace_path + get_code_snippet 完成一次完整探索</li>
+<li>- [ ] 能用 <code>cli</code> 子指令在本機跑任一工具，並加 <code>--json</code> 拿完整結果</li>
+<li>- [ ] 能用 detect_changes 做改動前的影響分析</li>
+<li>- [ ] 能用 check_index_coverage 確認改的檔案進圖了</li>
+<li>- [ ] 能用 manage_adr 記錄架構決策，並在另一個 session 讀取</li>
+<li>- [ ] 能解釋每個工具的「範圍」（search_code 只搜已索引檔案、ingest_traces 只驗證 HTTP_CALLS）</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

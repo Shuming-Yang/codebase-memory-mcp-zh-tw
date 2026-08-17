@@ -151,6 +151,47 @@ CBM_DIAGNOSTICS=1 codebase-memory-mcp cli index_repository --repo-path ~/project
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 在共用 CI Runner 上安全部署 CBM</h2>
+<p>假設你的團隊在 GitHub Actions self-hosted runner 上使用 CBM，要確保供應鏈安全、多租戶隔離、以及問題時能抓到診斷。</p>
+<ol>
+<li><strong>下載與驗證</strong>：<code>sha256sum -c checksums.txt --ignore-missing</code>——第一層 checksum。</li>
+<li><strong>驗證簽章</strong>：<code>gh attestation verify codebase-memory-mcp --owner DeusData</code>——第二層 SLSA3。</li>
+<li><strong>驗證 cosign</strong>：<code>cosign verify-blob codebase-memory-mcp ...</code>——第三層 keyless 簽章。</li>
+<li><strong>限制範圍</strong>：<code>CBM_ALLOWED_ROOT=/workspace/projects</code>。</li>
+<li><strong>最小化設定</strong>：installer 絕不翻開實驗性 flag、不啟用 plugin。</li>
+<li><strong>啟用診斷</strong>：<code>CBM_DIAGNOSTICS=1</code>——蒐集 trajectory.ndjson。</li>
+<li><strong>審計清單</strong>：把「零 runtime 依賴、無 telemetry」寫進團隊安全準則。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>診斷模式每 5 秒寫入 trajectory.ndjson——對效能有微小影響，僅排查時啟用。</td><td>trajectory.ndjson：rss/queries/page_faults<br>snapshot.json：最新快照</td></tr>
+<tr><td><strong>品質</strong></td><td>六層防護是遞進的——只驗 checksum 不夠，checksum 只證明「一致」不證明「官方」。</td><td>三層都要驗：checksum + SLSA + cosign</td></tr>
+<tr><td><strong>安全</strong></td><td>CBM 100% 本機處理、無 telemetry。若看到對外連線，確認來源 process。</td><td>用 lsof 確認來源<br>CBM_ALLOWED_ROOT 限制範圍</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（安全模型）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>供應鏈</td><td>六層防護機制</td><td><a href="install.html">安裝指南</a></td><td>安裝指南從「使用者操作」角度，安全頁從「防護原理」角度</td></tr>
+<tr><td>CBM_ALLOWED_ROOT</td><td>多租戶限制用途</td><td><a href="config.html">設定</a></td><td>設定頁列環境變數表，安全頁解釋安全意圖</td></tr>
+<tr><td>診斷 log</td><td>trajectory.ndjson / snapshot.json</td><td><a href="daemon.html">Session Daemon</a></td><td>daemon 頁解釋 log 檔案完整清單</td></tr>
+<tr><td>conditional 安裝</td><td>installer 絕不亂寫</td><td><a href="multi-agent.html">Multi-Agent</a></td><td>Multi-Agent 頁解釋 conditional 的完整邏輯</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能走完「checksum + SLSA3 + cosign」三層驗證流程</li>
+<li>- [ ] 能在共用環境設定 CBM_ALLOWED_ROOT，並解釋它防什麼、不能防什麼</li>
+<li>- [ ] 能啟用 CBM_DIAGNOSTICS=1，找到 trajectory.ndjson 並解讀</li>
+<li>- [ ] 能解釋「checksum 驗證通過」不等於「來源可信」</li>
+<li>- [ ] 能設計一份「CBM 供應鏈審計 checklist」</li>
+<li>- [ ] 能解釋 CBM 為何不需要 telemetry，以及「無 telemetry」的代價</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

@@ -135,6 +135,47 @@ $ cat ~/.cache/codebase-memory-mcp/logs/cbm-daemon.log | tail -20
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 5 人團隊的 daemon 協作與升級流程</h2>
+<p>假設你的 5 人團隊各自用不同 agent，要確保 daemon 協作正常且能安全升級。</p>
+<ol>
+<li><strong>盤點現況</strong>：<code>cat ~/.cache/codebase-memory-mcp/logs/cbm-daemon.log | tail -30</code>——確認 daemon 狀態、active session 數、版本。</li>
+<li><strong>版本統一</strong>：<code>codebase-memory-mcp --version</code>——確認所有人用同一版本。</li>
+<li><strong>多 session 驗證</strong>：Session A 跑 index_repository；Session B 跑 search_graph；Session C 跑 trace_path——三者共享同一份圖。</li>
+<li><strong>觸發升級</strong>：<code>codebase-memory-mcp update</code>——先下載/驗證/暫存新二進位，然後發布維護意圖。</li>
+<li><strong>觀察協調</strong>：daemon 要求所有 session 取消暫時性操作、等 process 退出、獨佔 barriers 後更換二進位。</li>
+<li><strong>驗證結果</strong>：<code>cat ~/.cache/codebase-memory-mcp/logs/activation-events.ndjson</code></li>
+<li><strong>重啟 session</strong>：所有成員關閉再重開 agent session。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>watcher 使用 adaptive interval；過多 session 同時觸發索引會讓 job queue 積壓。</td><td>用 CLI 直接索引（走 per-project lock）<br>避免並行對同一 repo 發 index</td></tr>
+<tr><td><strong>品質</strong></td><td>admission barrier 要求 exact-build——不同版本的二進位對同一 SQLite 圖做讀寫會產生 ABI 衝突。</td><td>daemon-conflicts.ndjson 記錄衝突<br>activation-events.ndjson 記錄升級進度</td></tr>
+<tr><td><strong>安全</strong></td><td>daemon 是 detached 的，事件寫到 owner-only 的 durable records。CLI 模式不啟動 daemon，但仍參與 OS admission barrier 與 per-project lock。</td><td>確保 cache 目錄權限 700<br>CLI ≠ 零互動（仍有 lock）</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（Session Daemon）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>admission barrier</td><td>exact-build 的完整機制</td><td><a href="security.html">安全模型</a></td><td>安全頁從「供應鏈」角度，daemon 頁從「運行時協調」角度</td></tr>
+<tr><td>CLI 模式</td><td>不連 daemon、但參與 lock</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁列 CLI 子指令的完整語法</td></tr>
+<tr><td>更新流程</td><td>先備好再換的完整順序</td><td><a href="config.html">設定</a></td><td>設定頁解釋 daemon 在「第一個 session」時捕捉設定的時機</td></tr>
+<tr><td>watcher</td><td>背景 auto-sync 概要</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 watcher 的 adaptive interval 演算法</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能解釋 daemon 如何讓多個 session 共享 watcher/索引/UI</li>
+<li>- [ ] 能說明 exact-build admission barrier 為何要求「同版本 + 同 build + 同 cache root」</li>
+<li>- [ ] 能找到並閱讀 cbm-daemon.log、daemon-conflicts.ndjson</li>
+<li>- [ ] 能走完「先備好再換」的升級流程，並驗證 activation-events.ndjson</li>
+<li>- [ ] 能解釋 CLI 模式「不連 daemon」不等於「零互動」</li>
+<li>- [ ] 能設計測試：驗證「最後 session 關閉後 daemon 正確退出」</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

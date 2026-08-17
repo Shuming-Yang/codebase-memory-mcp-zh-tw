@@ -133,6 +133,45 @@ codebase-memory-mcp cli index_repository --repo-path ~/project
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 10 人團隊的 artifact 策略</h2>
+<p>假設你的 10 人團隊共用一個大型 monorepo，要建立 artifact 共享策略。</p>
+<ol>
+<li><strong>CI 統一產出 Best tier</strong>：在 merge 到 main 的 pipeline 上跑 <code>index_repository --repo-path . --persistence</code>，把 graph.db.zst（zstd -9 + VACUUM）commit 回 main。</li>
+<li><strong>隊友 onboarding</strong>：clone 後第一次 <code>index_repository</code> 自動 bootstrap（解壓 + 增量補 local diff）。</li>
+<li><strong>保留 .gitattributes</strong>：確保 <code>merge=ours</code> 設定存在，並行開發時 artifact 不會衝突。</li>
+<li><strong>版本管理</strong>：全員升級到同一 CBM 版本——artifact 由不同版本產生會導致解壓失敗。</li>
+<li><strong>監控 artifact 大小</strong>：長期未 VACUUM 會讓 artifact 越推越大——定期用 Best tier 重新 export。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>Best tier（zstd -9 + VACUUM）壓縮比 8–13:1，bootstrap 從「等 10 分鐘」降到「等 10 秒」。Fast tier（zstd -3）留給 watcher 的低延遲增量。</td><td>Best → CI 產出、onboarding<br>Fast → watcher 增量</td></tr>
+<tr><td><strong>品質</strong></td><td>bootstrap 時先做完整性檢查，再解壓、再跑增量索引補 diff——避免整包重新索引。</td><td>artifact 由不同 CBM 版本產生會解壓失敗<br>確認全員版本一致</td></tr>
+<tr><td><strong>安全</strong></td><td>artifact 是壓縮的 SQLite DB——包含你的程式碼結構資訊。不適合 commit 進公開 repo。</td><td>Private repo 才 commit artifact<br>Public repo 用 .gitignore</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（Graph Artifact）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>two-tier export</td><td>Best/Fast 的差異</td><td><a href="performance.html">效能基準</a></td><td>效能頁解釋壓縮對索引時間的影響</td></tr>
+<tr><td>merge=ours</td><td>gitattributes 的用途</td><td><a href="code/store.html">store 程式碼對照</a></td><td>程式碼頁解釋 artifact 的壓縮管線實現</td></tr>
+<tr><td>bootstrap</td><td>解壓 → 增量索引</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理解釋 RAM-first 管線如何處理 bootstrap</td></tr>
+<tr><td>CI 整合</td><td>merge 到 main 時自動產出</td><td><a href="daemon.html">Session Daemon</a></td><td>daemon 頁解釋 watcher 的增量更新機制</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 <code>index_repository --persistence</code> 產出 Best-tier artifact</li>
+<li>- [ ] 能解釋 bootstrap 流程（解壓 → 增量索引）如何省掉重索引</li>
+<li>- [ ] 能解釋 merge=ours 為何讓二進位不衝突（保留我方版本）</li>
+<li>- [ ] 能決定何時該 commit artifact、何時該 .gitignore</li>
+<li>- [ ] 能設計一個 CI workflow：merge 到 main 時自動產出並 commit artifact</li>
+<li>- [ ] 能解釋「對方分支重產的 artifact」在 merge=ours 之下會被捨棄</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

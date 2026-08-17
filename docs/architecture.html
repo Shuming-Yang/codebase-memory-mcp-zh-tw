@@ -162,6 +162,48 @@ internal/cbm/         Vendored tree-sitter grammars（158 語言）+ AST extract
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 大型 Node.js monorepo 完整索引專案</h2>
+<p>假設你有一個 20 萬行的 Node.js monorepo，包含 5 個微服務（auth、order、payment、notification、gateway），使用 Express + TypeScript + PostgreSQL。你的目標是<strong>從零開始建立完整的知識圖譜，然後回答「改 auth 服務會炸到哪些服務」</strong>。</p>
+<ol>
+<li><strong>環境準備</strong>：<code>CBM_WORKERS=8 CBM_MEM_BUDGET_MB=8192 codebase-memory-mcp cli index_repository --repo-path /path/to/monorepo</code>——設定 8 個 worker、8GB 記憶體預算，啟動 full 模式索引。預期輸出顯示多個 Pass 依序完成。</li>
+<li><strong>確認圖譜狀態</strong>：<code>codebase-memory-mcp cli index_status --project monorepo</code>——確認節點數 &gt; 50,000、邊數 &gt; 200,000、generation 正常遞增。</li>
+<li><strong>鳥瞰架構</strong>：<code>get_architecture(project="monorepo", aspects=["clusters","boundaries","routes"])</code>——Louvain 社群會把 5 個微服務的函式自動分群；routes 顯示 Express 路由表。</li>
+<li><strong>找出跨服務 HTTP 呼叫</strong>：<code>query_graph(project="monorepo", query="MATCH (a:Function)-[:HTTP_CALLS]-&gt;(b:Function) WHERE a.file_path CONTAINS '/auth/' RETURN b.file_path, count(*) AS hits ORDER BY hits DESC LIMIT 20")</code>——auth 服務被哪些服務呼叫、呼叫頻率。</li>
+<li><strong>未 commit 變更的爆炸半徑</strong>：<code>detect_changes(project="monorepo")</code>——你改了 auth 的 <code>verifyToken</code> 函式，CBM 自動映射出受影響的 12 個符號。</li>
+<li><strong>深入關鍵節點</strong>：<code>get_code_snippet(project="monorepo", qualified_name="monorepo.src.auth.verifyToken")</code>——直接讀取 verifyToken 的原始碼。</li>
+<li><strong>留下架構決策</strong>：<code>manage_adr(mode="update", content="auth.verifyToken 改為 async，影響 order/payment/notification 三個服務")</code>——跨 session 保留架構決策。</li>
+</ol>
+<p>這七步從「索引 → 確認 → 鳥瞰 → 跨服務查詢 → 爆炸半徑 → 原始碼 → 決策記錄」，完整展示了架構中各模組的協作。</p>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>多 pass 索引的瓶頸通常在聚合階段（Hybrid LSP、Louvain），而非平行抽取。worker 數超過 CPU 核心數後收益遞減。</td><td><code>CBM_WORKERS</code>（建議 = 核心數 × 1–1.5）<br><code>CBM_MEM_BUDGET_MB</code>（建議 = RAM × 0.6）</td></tr>
+<tr><td><strong>品質</strong></td><td>Hybrid LSP 的型別解析品質取決於語言支援等級。未支援語言退回 USAGE 邊——不保證唯一目標。</td><td>用 <code>get_graph_schema</code> 確認邊型分佈<br>用 <code>check_index_coverage</code> 確認檔案進圖</td></tr>
+<tr><td><strong>安全</strong></td><td><code>CBM_ALLOWED_ROOT</code> 限制索引範圍——多租戶或未信任環境必須設定。SQLite WAL 模式確保 ACID-safe，但不防範惡意使用者直接讀寫 cache 目錄。</td><td><code>CBM_ALLOWED_ROOT=/workspace</code><br>確保 <code>~/.cache/codebase-memory-mcp/</code> 權限 700</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（架構總覽）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>模組職責</td><td>15 個模組的靜態職責表</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理從「設計哲學」角度解釋，架構總覽從「檔案佈局」角度列出</td></tr>
+<tr><td>索引 pass</td><td>pass 順序表 + 資料流圖</td><td><a href="code/pipeline.html">pipeline 程式碼對照</a></td><td>架構頁是概念層，程式碼頁是 C 實現層</td></tr>
+<tr><td>Hybrid LSP</td><td>一句話提及「型別精煉」</td><td><a href="how-it-works.html">運作原理</a>、<a href="code/passes.html">passes 對照</a></td><td>運作原理有 10 語言的處理重點表，架構頁只做概要</td></tr>
+<tr><td>跨服務查詢</td><td>CROSS_* / HTTP_CALLS 邊提及</td><td><a href="data-model.html">圖資料模型</a>、<a href="cypher.html">Cypher 查詢</a></td><td>資料模型定義邊型語意，Cypher 提供查詢語法</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能畫出 CBM 的「discover → pipeline → store → mcp → cypher」資料流圖（不看文件）</li>
+<li>- [ ] 能解釋為何「平行化抽取」與「聚合型 pass」不能全部打散到 worker 上</li>
+<li>- [ ] 能用 <code>get_architecture</code> 取得專案的 clusters + routes，並解讀 Louvain 分群結果</li>
+<li>- [ ] 能用 Cypher 查出「某服務被哪些服務 HTTP 呼叫」，並驗證結果與實際 code 一致</li>
+<li>- [ ] 能用 <code>detect_changes</code> + <code>get_code_snippet</code> 完成一次「改動前影響分析」</li>
+<li>- [ ] 能解釋 <code>CBM_ALLOWED_ROOT</code> 在多租戶環境的安全用途</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

@@ -89,6 +89,46 @@ codebase-memory-mcp cli trace_path --project my-project --function-name main --d
 </ul>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 根據專案語言選擇 CBM 版本並驗證</h2>
+<p>假設你有一個 Python + Rust + TypeScript 的混合專案，要確認 CBM 版本是否支援所有語言的型別解析。</p>
+<ol>
+<li><strong>確認語言需求</strong>：<code>find src/ -name '*.py' | wc -l</code>、<code>find src/ -name '*.rs' | wc -l</code>、<code>find src/ -name '*.ts' | wc -l</code>——Python 需 v0.7+、Rust 需 v0.8+、TypeScript v0.6+ 即可。</li>
+<li><strong>確認 CBM 版本</strong>：<code>codebase-memory-mcp --version</code>——要 v0.8+ 才能完整支援三種語言。</li>
+<li><strong>索引並驗證</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/mixed-project</code></li>
+<li><strong>驗證型別解析</strong>：<code>trace_path --project mixed-project --function-name main --direction outbound</code>——看結果中 CALLS vs USAGE 的比例。</li>
+<li><strong>檢查語意邊</strong>：<code>get_graph_schema(project="mixed-project")</code>——確認 SEMANTICALLY_RELATED 和 SIMILAR_TO 邊是否存在（v0.9+ 才有）。</li>
+<li><strong>跨 repo（可選）</strong>：如果有多個 repo，索引進同一個 store 看 CROSS_* 邊。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td>v0.9 的語意搜尋用 nomic-embed-code（768d int8）編譯進二進位——零 API key、本機向量搜尋。11-signal scoring 的計算成本在索引時吸收。</td><td>語意搜尋不需要額外設定<br>embedding 模型已內建</td></tr>
+<tr><td><strong>品質</strong></td><td>語意邊（SEMANTICALLY_RELATED）的門檻是 score ≥ 0.80——這是保守設定，避免假陽性。SIMILAR_TO 用 MinHash + LSH，Jaccard 計分。</td><td>用 <code>get_graph_schema</code> 確認邊型<br>用 Cypher 查詢驗證邊品質</td></tr>
+<tr><td><strong>安全</strong></td><td>Cross-repo 的 CROSS_* 邊會連結不同 repo 的節點——確認你的 store 設定正確（同一個 <code>CBM_CACHE_DIR</code>）。</td><td>跨 repo 需要同一個 cache root<br>不同 root 會被 admission barrier 擋住</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（版本演進）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>Hybrid LSP 語言</td><td>v0.7/v0.8 新增的語言清單</td><td><a href="how-it-works.html">運作原理</a></td><td>運作原理有每個語言的處理重點表</td></tr>
+<tr><td>語意搜尋</td><td>11-signal scoring 概要</td><td><a href="data-model.html">圖資料模型</a></td><td>資料模型解釋 SEMANTICALLY_RELATED 邊的定義</td></tr>
+<tr><td>Cross-repo</td><td>CROSS_* 邊的產生</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁解釋 get_architecture 的 cross-repo 功能</td></tr>
+<tr><td>artifact</td><td>two-tier export 的演進</td><td><a href="graph-artifact.html">Graph Artifact</a></td><td>artifact 頁有完整的 CI 整合策略</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能說出 CBM 的「語法 → 型別 → 語意」三階段演進</li>
+<li>- [ ] 能判斷你的專案需要哪個版本的 CBM（根據語言需求）</li>
+<li>- [ ] 能解釋 v0.9 的語意搜尋如何運作（11-signal scoring）</li>
+<li>- [ ] 能用 <code>get_graph_schema</code> 確認圖中有哪些邊型</li>
+<li>- [ ] 能解釋 cross-repo 的 CROSS_* 邊如何產生</li>
+<li>- [ ] 能解釋 v0.7→v0.8→v0.9 的擴張路線（Python/PHP/C# → Java/Kotlin/Rust → 語意邊）</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>

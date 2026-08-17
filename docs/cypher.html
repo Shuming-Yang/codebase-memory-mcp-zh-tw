@@ -182,6 +182,47 @@ ORDER BY depth</code></pre>
 </ol>
 </div>
 
+<div class="guide" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(34, 211, 238, 0.3);">
+<h2>專案級端到端 Worked Example — 用 Cypher 做完整的架構品質審計</h2>
+<p>假設你接手一個 Python Django 專案，要用 Cypher 做完整的架構品質審計——從死碼偵測到循環依賴到 API 覆蓋率。</p>
+<ol>
+<li><strong>索引專案</strong>：<code>codebase-memory-mcp cli index_repository --repo-path /path/to/django-project</code></li>
+<li><strong>死碼偵測（第一輪）</strong>：<code>MATCH (f:Function) WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() } AND f.name CONTAINS 'test' = false RETURN f.name, f.file_path LIMIT 50</code></li>
+<li><strong>死碼確認（第二輪）</strong>：<code>MATCH (f:Function) WHERE NOT EXISTS { (f)&lt;-[:CALLS]-() } AND NOT EXISTS { (f)&lt;-[:IMPORTS]-() } AND NOT EXISTS { (f)&lt;-[:USAGE]-() } RETURN f.name, f.file_path</code></li>
+<li><strong>循環依賴偵測</strong>：<code>MATCH (a:Function)-[:CALLS*2..4]-&gt;(a) RETURN DISTINCT a.name, a.file_path LIMIT 20</code></li>
+<li><strong>API 覆蓋率</strong>：<code>MATCH (r:Route) OPTIONAL MATCH (r)-[:HANDLES]-&gt;(h:Function) WHERE h IS NULL RETURN r.method, r.path AS uncovered_routes</code></li>
+<li><strong>扇入熱點</strong>：<code>MATCH (callee:Function)&lt;-[:CALLS]-(caller) RETURN callee.name, count(caller) AS fan_in ORDER BY fan_in DESC LIMIT 10</code></li>
+<li><strong>結果匯出</strong>：整理成報告，標記「建議刪除」（死碼）、「建議重構」（循環依賴）。</li>
+</ol>
+
+<h2>效能 / 品質 / 安全深度</h2>
+<table>
+<tr><th>面向</th><th>實務考量</th><th>關鍵參數</th></tr>
+<tr><td><strong>效能</strong></td><td><code>[*0..]</code> 無界展開可能導致數秒延遲；加 label 過濾可將延遲降到毫秒級。</td><td>避免 <code>[*0..]</code>，改用 <code>[*1..3]</code><br>WHERE 條件盡量前置</td></tr>
+<tr><td><strong>品質</strong></td><td>EXISTS 子查詢在 CBM 中是<strong>單跳存在性檢查</strong>，不是 correlated subquery。</td><td>用 <code>trace_path</code> 驗證多跳關係<br>用 <code>get_graph_schema</code> 確認邊型</td></tr>
+<tr><td><strong>安全</strong></td><td>Cypher 是唯讀的——不能用 MERGE/CREATE 修改圖。</td><td>用 <code>delete_project</code> 清除專案<br>用 <code>manage_adr</code> 記錄重構決策</td></tr>
+</table>
+
+<h2>文件間比較對照表</h2>
+<table>
+<tr><th>面向</th><th>本文（Cypher 查詢）</th><th>相關文</th><th>差異說明</th></tr>
+<tr><td>語法支援</td><td>唯讀子集的完整語法表</td><td><a href="code/cypher.html">cypher 程式碼對照</a></td><td>程式碼頁解釋 lexer → parser → planner → executor 的四階段</td></tr>
+<tr><td>死碼偵測</td><td>EXISTS 子查詢語法</td><td><a href="data-model.html">圖資料模型</a></td><td>資料模型解釋 CALLS/USAGE 邊的語意差異</td></tr>
+<tr><td>效能考量</td><td>查詢延遲數量級</td><td><a href="performance.html">效能基準</a></td><td>效能頁有完整基準數據與調參建議</td></tr>
+<tr><td>實際查詢</td><td>死碼 / 扇入 / 循環依賴</td><td><a href="mcp-tools.html">MCP 工具</a></td><td>MCP 工具頁有 query_graph 的完整參數說明</td></tr>
+</table>
+
+<h2>互動式檢核清單</h2>
+<ul>
+<li>- [ ] 能用 EXISTS 子查詢寫出死碼偵測查詢，並解釋為何要第二輪確認</li>
+<li>- [ ] 能用 variable-length path 偵測循環依賴，並解釋為何不能用 <code>[*0..]</code></li>
+<li>- [ ] 能用 fan-in 查詢找出「上帝函式」，並用 <code>get_code_snippet</code> 確認其職責</li>
+<li>- [ ] 能分辨 EXISTS 在 CBM 中是「單跳存在性檢查」而非 correlated subquery</li>
+<li>- [ ] 能用 UNION 合併多個查詢結果，產出一份完整報告</li>
+<li>- [ ] 能解釋 Cypher 查詢回傳 <code>unsupported</code> 錯誤時該如何改寫</li>
+</ul>
+</div>
+
 <footer>
   <div>這是 <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData/codebase-memory-mcp</a> 的非官方繁體中文教學站。</div>
   <div>內容 © <a href="https://github.com/DeusData/codebase-memory-mcp">DeusData</a>（MIT）· 本站與 DeusData 無關 · 對齊上游 main @ 2c50c77</div>
